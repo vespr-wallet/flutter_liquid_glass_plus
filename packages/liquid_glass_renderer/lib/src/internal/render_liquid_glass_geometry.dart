@@ -256,6 +256,13 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
       snappedBounds.height * devicePixelRatio,
     ).snapToPixels(1);
 
+    // A zero-area matte has nothing to draw and can't be rasterized
+    // (`toImageSync` throws "Invalid image dimensions" in `render()`), so
+    // treat it like a geometry without shapes until it has an area again.
+    if (matteBounds.width.ceil() <= 0 || matteBounds.height.ceil() <= 0) {
+      return null;
+    }
+
     // Set the new geometry - use PathOnlyGeometryCache when no shader
     final GeometryCache newGeo;
     if (hasShader) {
