@@ -260,6 +260,8 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
     // (`toImageSync` throws "Invalid image dimensions" in `render()`), so
     // treat it like a geometry without shapes until it has an area again.
     if (matteBounds.width.ceil() <= 0 || matteBounds.height.ceil() <= 0) {
+      // The previous geometry may still be part of the combined matte.
+      _renderLink?.markRebuilt(this);
       return null;
     }
 
