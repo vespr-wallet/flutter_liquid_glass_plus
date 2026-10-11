@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:equatable/equatable.dart';
@@ -379,12 +380,16 @@ class UnrenderedGeometryCache extends GeometryCache {
   /// The matte image representing the geometry.
   final Picture matte;
 
+  // A shape can be laid out with zero width or height (e.g. mid-animation),
+  // but `toImage`/`toImageSync` throw "Invalid image dimensions" for those.
+  // Rasterize at least 1px instead: the matte picture draws nothing for an
+  // empty shape, so the image stays transparent.
+  int get _imageWidth => max(1, matteBounds.width.ceil());
+  int get _imageHeight => max(1, matteBounds.height.ceil());
+
   @override
   Future<RenderedGeometryCache> renderAsync() async {
-    final image = await matte.toImage(
-      matteBounds.width.ceil(),
-      matteBounds.height.ceil(),
-    );
+    final image = await matte.toImage(_imageWidth, _imageHeight);
     return RenderedGeometryCache(
       matte: image,
       matteBounds: matteBounds,
@@ -396,10 +401,7 @@ class UnrenderedGeometryCache extends GeometryCache {
 
   @override
   RenderedGeometryCache render() {
-    final image = matte.toImageSync(
-      matteBounds.width.ceil(),
-      matteBounds.height.ceil(),
-    );
+    final image = matte.toImageSync(_imageWidth, _imageHeight);
     dispose();
     return RenderedGeometryCache(
       matte: image,

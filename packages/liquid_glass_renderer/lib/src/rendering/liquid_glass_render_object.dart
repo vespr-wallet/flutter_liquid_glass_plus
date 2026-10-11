@@ -215,13 +215,13 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
 
       needsGeometryUpdate = false;
 
-      final (image, matteBounds) = _buildGeometryImage(
-        shapesWithGeometry,
-        boundingBox,
-      );
-
-      _geometryImage = image;
-      _geometryMatteBounds = matteBounds;
+      // When the geometry image can't be built (empty bounds), no glass is
+      // painted this frame and children are painted normally below.
+      if (_buildGeometryImage(shapesWithGeometry, boundingBox)
+          case (final image, final matteBounds)) {
+        _geometryImage = image;
+        _geometryMatteBounds = matteBounds;
+      }
     }
 
     if (debugPaintLiquidGlassGeometry) {
@@ -345,7 +345,9 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   @protected
   bool needsGeometryUpdate = true;
 
-  (ui.Image, Rect) _buildGeometryImage(
+  /// Returns null when the geometry bounds have no area in physical pixels,
+  /// since `toImageSync` throws "Invalid image dimensions" for those.
+  (ui.Image, Rect)? _buildGeometryImage(
     List<(RenderLiquidGlassGeometry, GeometryCache, Matrix4)> geometries,
     Rect bounds,
   ) {
@@ -355,6 +357,15 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     ).snapToPixels(devicePixelRatio);
 
     final size = boundsInMatteSpace.size * devicePixelRatio;
+    final imageWidth = size.width.ceil();
+    final imageHeight = size.height.ceil();
+    if (imageWidth <= 0 || imageHeight <= 0) {
+      logger.fine(
+        '$hashCode Skipping geometry image for empty size '
+        '${size.width}x${size.height}',
+      );
+      return null;
+    }
 
     // Only allocate StringBuffer if logging is active to avoid
     // unnecessary allocations on every frame
@@ -404,10 +415,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
 
     final picture = recorder.endRecording();
     try {
-      final image = picture.toImageSync(
-        size.width.ceil(),
-        size.height.ceil(),
-      );
+      final image = picture.toImageSync(imageWidth, imageHeight);
 
       if (buffer != null) {
         logger.fine(buffer.toString());
