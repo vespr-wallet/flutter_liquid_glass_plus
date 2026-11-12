@@ -1,6 +1,7 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_plus/src/internal/glass_drag_builder.dart';
+import 'package:liquid_glass_plus/src/internal/glass_pan_region.dart';
 import 'package:motor/motor.dart';
 
 /// {@template glass_glow}
@@ -60,14 +61,12 @@ class GlassGlow extends StatelessWidget {
           child: child,
         );
       case GestureMode.gestureDetector:
-        return GestureDetector(
+        return GlassPanRegion(
+          role: GlassPanRole.glow,
           behavior: hitTestBehavior,
-          onPanStart: (details) =>
-              _handlePointer(context, details.localPosition),
-          onPanUpdate: (details) =>
-              _handlePointer(context, details.localPosition),
-          onPanEnd: (details) => _removeTouch(context),
-          onPanCancel: () => _removeTouch(context),
+          onStart: (position) => _handlePointer(context, position),
+          onUpdate: (position, delta) => _handlePointer(context, position),
+          onEnd: () => _removeTouch(context),
           child: child,
         );
     }

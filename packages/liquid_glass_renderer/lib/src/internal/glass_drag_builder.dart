@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:liquid_glass_plus/src/internal/glass_pan_region.dart';
 import 'package:meta/meta.dart';
 
 /// {@template gesture_mode}
@@ -16,6 +17,10 @@ import 'package:meta/meta.dart';
 /// preliminary [GestureDetector.onPanDown], so the effect will **not** trigger
 /// when a descendant handles the interaction. [GestureDetector.onPanCancel]
 /// clears the drag when the pan loses the arena.
+///
+/// A `LiquidStretch` and a `GlassGlow` nested directly in each other, both in
+/// [GestureMode.gestureDetector], share a single pan recognizer, so both
+/// effects follow the same drag.
 /// {@endtemplate}
 enum GestureMode {
   /// Responds to all raw pointer events via a [Listener], including those
@@ -93,12 +98,12 @@ class _GlassDragBuilderState extends State<GlassDragBuilder> {
           child: child,
         );
       case GestureMode.gestureDetector:
-        return GestureDetector(
+        return GlassPanRegion(
+          role: GlassPanRole.stretch,
           behavior: widget.behavior,
-          onPanStart: (details) => _startDrag(),
-          onPanUpdate: (details) => _updateDrag(details.delta),
-          onPanEnd: (details) => _endDrag(),
-          onPanCancel: _endDrag,
+          onStart: (position) => _startDrag(),
+          onUpdate: (position, delta) => _updateDrag(delta),
+          onEnd: _endDrag,
           child: child,
         );
     }

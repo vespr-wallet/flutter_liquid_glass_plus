@@ -1,7 +1,7 @@
 ## Unreleased
 
 - **FIX**: removing a `LiquidStretch` while a drag is in progress no longer throws `setState() called after dispose()` (upstream [88dcd26](https://github.com/whynotmake-it/flutter_liquid_glass/commit/88dcd26)). A cancelled pointer now also ends the stretch instead of leaving it stuck (fork addition).
-- **FEAT**: new `gestureMode` option on `GlassGlow` and `LiquidStretch` (`GestureMode.listener` by default, unchanged behaviour; `GestureMode.gestureDetector` lets nested buttons claim the gesture) (upstream [916b019](https://github.com/whynotmake-it/flutter_liquid_glass/commit/916b019)).
+- **FEAT**: new `gestureMode` option on `GlassGlow` and `LiquidStretch` (`GestureMode.listener` by default, unchanged behaviour; `GestureMode.gestureDetector` lets nested buttons claim the gesture; a `LiquidStretch` and `GlassGlow` nested in each other share one pan recognizer so both effects follow the drag, which is a fork addition) (upstream [916b019](https://github.com/whynotmake-it/flutter_liquid_glass/commit/916b019)).
 
 ## 0.3.3
 
