@@ -2,8 +2,8 @@
 
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
 import 'package:liquid_glass_plus/src/internal/render_liquid_glass_geometry.dart';

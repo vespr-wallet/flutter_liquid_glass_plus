@@ -1,11 +1,11 @@
 import 'dart:ui' as ui;
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
 
 /// Represents a shape that can be used by a [LiquidGlass] widget.
-sealed class LiquidShape extends OutlinedBorder with EquatableMixin {
+sealed class LiquidShape extends OutlinedBorder with Equatable {
   const LiquidShape({super.side = BorderSide.none});
 
   @protected

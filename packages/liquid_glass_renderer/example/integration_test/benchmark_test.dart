@@ -1,3 +1,7 @@
+// The example's third-party UI packages still build on package:flutter's
+// material/cupertino libraries, so it stays on them for now.
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';

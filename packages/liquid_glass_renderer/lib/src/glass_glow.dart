@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:motor/motor.dart';
 
 /// {@template glass_glow}
@@ -10,7 +10,7 @@ class GlassGlow extends StatelessWidget {
   /// {@macro glass_glow}
   const GlassGlow({
     required this.child,
-    this.glowColor = Colors.white24,
+    this.glowColor = const Color(0x3DFFFFFF),
     this.glowRadius = 1,
     this.hitTestBehavior = HitTestBehavior.opaque,
     super.key,
