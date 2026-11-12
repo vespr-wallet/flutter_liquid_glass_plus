@@ -256,6 +256,7 @@ void main() {
 
     goldenTest(
       'renders shadows around each shape',
+      skip: skipPlatformGoldens,
       fileName: 'glass_shadows',
       pumpBeforeTest: pumpOnce,
       builder: () => GoldenTestGroup(
