@@ -55,19 +55,10 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
     _link = value;
   }
 
-  LiquidGlassSettings? _settings;
+  LiquidGlassSettings _settings;
 
   /// The settings for the liquid glass effect.
-  ///
-  /// This is always non-null after construction as it's a required parameter.
-  LiquidGlassSettings get settings {
-    assert(
-      _settings != null,
-      'Settings accessed before initialization. '
-      'Ensure the render object is properly constructed.',
-    );
-    return _settings!;
-  }
+  LiquidGlassSettings get settings => _settings;
 
   set settings(LiquidGlassSettings value) {
     if (_settings == value) return;
@@ -251,6 +242,7 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
           paintLiquidGlass(
             context,
             offset,
+            shader,
             shapesWithGeometry,
             _paintBounds,
           );
@@ -274,10 +266,12 @@ abstract class LiquidGlassRenderObject extends RenderProxyBox {
   }
 
   /// Subclasses implement the actual glass rendering
-  /// (e.g., with backdrop filters)
+  /// (e.g., with backdrop filters) with [renderShader], which has already been
+  /// set up with the geometry matte.
   void paintLiquidGlass(
     PaintingContext context,
     Offset offset,
+    FragmentShader renderShader,
     List<(RenderLiquidGlassGeometry, GeometryCache, Matrix4)> shapes,
     Rect boundingBox,
   );
@@ -475,10 +469,17 @@ class InheritedGeometryRenderLink extends InheritedWidget {
 
   final GeometryRenderLink link;
 
-  static GeometryRenderLink? of(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<InheritedGeometryRenderLink>()
-        ?.link;
+  static GeometryRenderLink of(BuildContext context) {
+    final inherited = context
+        .dependOnInheritedWidgetOfExactType<InheritedGeometryRenderLink>();
+    if (inherited == null) {
+      throw FlutterError(
+        'No LiquidGlassLayer found in context.\n'
+        'LiquidGlass must be placed inside a LiquidGlassLayer, or use '
+        'LiquidGlass.withOwnLayer.',
+      );
+    }
+    return inherited.link;
   }
 
   @override

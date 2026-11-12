@@ -72,13 +72,13 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
     markNeedsPaint();
   }
 
-  LiquidGlassSettings? _settings;
+  LiquidGlassSettings _settings;
 
   /// The settings used for liquid glass rendering.
   ///
   /// If these settings change in a way that affects geometry, the geometry
   /// will be marked as needing an update.
-  LiquidGlassSettings get settings => _settings!;
+  LiquidGlassSettings get settings => _settings;
   set settings(LiquidGlassSettings value) {
     if (_settings == value) return;
 
@@ -224,19 +224,20 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
 
     // For path-only geometry (fake glass), we can skip the matte-based
     // optimizations since there's no matte to reuse.
-    final hasShader = _geometryShader != null;
+    final geometryShader = _geometryShader;
+    final existingGeometry = geometry;
 
-    if (hasShader &&
+    if (geometryShader != null &&
         geometryState == LiquidGlassGeometryState.mightNeedUpdate &&
         !anyShapeChangedInLayer &&
-        geometry != null) {
+        existingGeometry != null) {
       logger.finer('$hashCode Skipping geometry rebuild.');
       renderLink?.markRebuilt(this);
 
       // Only render once we are done building
-      geometry = geometry!.render();
+      final renderedGeometry = geometry = existingGeometry.render();
       geometryState = LiquidGlassGeometryState.updated;
-      return geometry;
+      return renderedGeometry;
     }
 
     logger.finer('$hashCode Rebuilding geometry');
@@ -259,9 +260,9 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
 
     // Set the new geometry - use PathOnlyGeometryCache when no shader
     final GeometryCache newGeo;
-    if (hasShader) {
+    if (geometryShader != null) {
       newGeo = geometry = UnrenderedGeometryCache(
-        matte: _buildGeometryPicture(snappedBounds, shapes),
+        matte: _buildGeometryPicture(geometryShader, snappedBounds, shapes),
         bounds: snappedBounds,
         matteBounds: matteBounds,
         shapes: shapes,
@@ -282,6 +283,7 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
   }
 
   Picture _buildGeometryPicture(
+    FragmentShader geometryShader,
     Rect geometryBounds,
     List<ShapeGeometry> shapes,
   ) {
@@ -290,9 +292,7 @@ abstract class RenderLiquidGlassGeometry extends RenderProxyBox {
     final width = (bounds.width * devicePixelRatio).ceil();
     final height = (bounds.height * devicePixelRatio).ceil();
 
-    // geometryShader is guaranteed non-null when this method is called
-    // (checked in maybeRebuildGeometry)
-    final shader = _geometryShader!
+    final shader = geometryShader
       ..setFloatUniforms((value) {
         value
           ..setFloat(width.toDouble())

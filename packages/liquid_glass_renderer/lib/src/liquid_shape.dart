@@ -1,8 +1,7 @@
-import 'dart:ui' as ui;
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
+import 'package:liquid_glass_plus/src/internal/lerp.dart';
 
 /// Represents a shape that can be used by a [LiquidGlass] widget.
 sealed class LiquidShape extends OutlinedBorder with Equatable {
@@ -66,14 +65,14 @@ sealed class LiquidShape extends OutlinedBorder with Equatable {
     // Same-type interpolation
     if (a is LiquidRoundedSuperellipse && b is LiquidRoundedSuperellipse) {
       return LiquidRoundedSuperellipse(
-        borderRadius: ui.lerpDouble(a.borderRadius, b.borderRadius, t)!,
+        borderRadius: lerpDoubleNonNull(a.borderRadius, b.borderRadius, t),
         side: BorderSide.lerp(a.side, b.side, t),
       );
     }
 
     if (a is LiquidRoundedRectangle && b is LiquidRoundedRectangle) {
       return LiquidRoundedRectangle(
-        borderRadius: ui.lerpDouble(a.borderRadius, b.borderRadius, t)!,
+        borderRadius: lerpDoubleNonNull(a.borderRadius, b.borderRadius, t),
         side: BorderSide.lerp(a.side, b.side, t),
       );
     }

@@ -17,22 +17,29 @@ import 'package:liquid_glass_plus/liquid_glass_plus.dart';
 // =============================================================================
 
 /// Controls which glass type to display.
-enum DisplayMode {
+/// An option with a label to show in a [_DropdownButton].
+abstract interface class _Labeled {
+  String get label;
+}
+
+enum DisplayMode implements _Labeled {
   both('Both'),
   realOnly('Real Only'),
   fakeOnly('Fake Only');
 
   const DisplayMode(this.label);
+  @override
   final String label;
 }
 
 /// Controls frost setting across all examples.
-enum FrostMode {
+enum FrostMode implements _Labeled {
   individual('Individual'),
   allFrosted('All Frosted'),
   allClear('All Clear');
 
   const FrostMode(this.label);
+  @override
   final String label;
 }
 
@@ -48,7 +55,12 @@ class _GlobalSettings extends InheritedWidget {
   final FrostMode frostMode;
 
   static _GlobalSettings of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<_GlobalSettings>()!;
+    final settings = context
+        .dependOnInheritedWidgetOfExactType<_GlobalSettings>();
+    if (settings == null) {
+      throw FlutterError('No _GlobalSettings found in context.');
+    }
+    return settings;
   }
 
   @override
@@ -127,8 +139,8 @@ class _PerformanceMonitorState extends State<_PerformanceMonitor> {
   void _onFrame(Duration timestamp) {
     if (!_isTracking) return;
 
-    if (_lastFrameTime != null) {
-      final frameTime = timestamp - _lastFrameTime!;
+    if (_lastFrameTime case final lastFrameTime?) {
+      final frameTime = timestamp - lastFrameTime;
       _stats.addFrame(frameTime);
       // Update UI every 10 frames to reduce overhead
       if (_stats.sampleCount % 10 == 0) {
@@ -425,7 +437,7 @@ class _GlobalControls extends StatelessWidget {
 }
 
 /// A styled dropdown button.
-class _DropdownButton<T extends Enum> extends StatelessWidget {
+class _DropdownButton<T extends _Labeled> extends StatelessWidget {
   const _DropdownButton({
     required this.label,
     required this.value,
@@ -462,7 +474,7 @@ class _DropdownButton<T extends Enum> extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  (value as dynamic).label as String,
+                  value.label,
                   style: TextStyle(
                     fontSize: 13,
                     color: CupertinoColors.label.resolveFrom(context),
@@ -492,7 +504,7 @@ class _DropdownButton<T extends Enum> extends StatelessWidget {
               onChanged(item);
               Navigator.pop(context);
             },
-            child: Text((item as dynamic).label as String),
+            child: Text(item.label),
           );
         }).toList(),
         cancelButton: CupertinoActionSheetAction(
@@ -636,9 +648,12 @@ class _SharedImageId extends InheritedWidget {
   final int imageId;
 
   static int of(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<_SharedImageId>()!
-        .imageId;
+    final sharedImageId = context
+        .dependOnInheritedWidgetOfExactType<_SharedImageId>();
+    if (sharedImageId == null) {
+      throw FlutterError('No _SharedImageId found in context.');
+    }
+    return sharedImageId.imageId;
   }
 
   @override

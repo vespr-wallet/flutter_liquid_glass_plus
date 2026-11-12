@@ -174,23 +174,26 @@ class _LiquidGlassState extends State<LiquidGlass>
   }
 
   void _startAnimation(Duration duration, Curve curve) {
-    _controller ??= AnimationController(vsync: this)
+    final controller = _controller ??= AnimationController(vsync: this)
       ..addListener(_onAnimationTick)
       ..addStatusListener(_onAnimationStatus);
 
-    if (_controller!.duration != duration) {
-      _controller!.duration = duration;
+    if (controller.duration != duration) {
+      controller.duration = duration;
     }
 
     _curvedAnimation?.dispose();
-    _curvedAnimation = CurvedAnimation(parent: _controller!, curve: curve);
+    _curvedAnimation = CurvedAnimation(parent: controller, curve: curve);
 
-    _controller!.forward(from: 0);
+    controller.forward(from: 0);
   }
 
   void _onAnimationTick() {
-    final t = _curvedAnimation?.value ?? _controller!.value;
-    _animatedShape = LiquidShape.lerp(_fromShape, widget.shape, t);
+    // Set by _startAnimation before the controller starts ticking.
+    final curvedAnimation = _curvedAnimation;
+    if (curvedAnimation == null) return;
+    _animatedShape =
+        LiquidShape.lerp(_fromShape, widget.shape, curvedAnimation.value);
     setState(() {});
   }
 
@@ -220,9 +223,9 @@ class _LiquidGlassState extends State<LiquidGlass>
 
     // Only create own layer if widget was constructed with ownLayerSettings.
     // Settings animation is handled by LiquidGlassLayer.
-    if (widget.ownLayerSettings != null) {
+    if (widget.ownLayerSettings case final ownLayerSettings?) {
       return LiquidGlassLayer(
-        settings: widget.ownLayerSettings!,
+        settings: ownLayerSettings,
         child: Builder(
           builder: (context) => _buildGlassContent(context, shape),
         ),
@@ -262,7 +265,7 @@ class _LiquidGlassState extends State<LiquidGlass>
     if (effectiveSettings.shouldUseFakeGlass) {
       return _RawLiquidGlass(
         shader: null,
-        renderLink: InheritedGeometryRenderLink.of(context)!,
+        renderLink: InheritedGeometryRenderLink.of(context),
         settings: effectiveSettings,
         devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
         shape: shape,
@@ -275,7 +278,7 @@ class _LiquidGlassState extends State<LiquidGlass>
     return ShaderBuilder(
       (context, shader, builtChild) => _RawLiquidGlass(
         shader: shader,
-        renderLink: InheritedGeometryRenderLink.of(context)!,
+        renderLink: InheritedGeometryRenderLink.of(context),
         settings: effectiveSettings,
         devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
         shape: shape,
@@ -483,8 +486,8 @@ class RenderLiquidGlassSingleShape extends RenderLiquidGlassGeometry
       offset,
       transform,
       (context, offset) {
-        if (child != null) {
-          context.paintChild(child!, offset);
+        if (child case final child?) {
+          context.paintChild(child, offset);
         }
       },
       oldLayer: _transformLayerHandle.layer,

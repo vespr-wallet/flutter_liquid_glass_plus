@@ -1,3 +1,7 @@
+## Unreleased
+
+- **REFACTOR**: removed every null assertion (`!`) and forced cast from the package, its tests and the example app, replaced with null checks, patterns and non-nullable fields. A `LiquidGlass` used outside a `LiquidGlassLayer` (or a `LiquidGlassRenderScope` lookup without one) now throws a `FlutterError` that names the missing ancestor instead of a bare `Null check operator used on a null value`. Deleted the unused `TransformTrackingRepaintBoundaryMixin`.
+
 ## 0.4.0
 
 - **FEAT**: new `shadows` parameter on `LiquidGlass` and `LiquidGlass.withOwnLayer` (default: none). Shadows are drawn with the canvas primitive that matches the shape (`drawRSuperellipse`, `drawRRect`, `drawOval`) instead of a blurred path (upstream [9599204](https://github.com/whynotmake-it/flutter_liquid_glass/commit/9599204)). They include upstream's later fixes: superellipse shapes get a superellipse shadow, and spread and offset are applied (upstream [77a373c](https://github.com/whynotmake-it/flutter_liquid_glass/commit/77a373c)). Upstream's `FakeGlass` widget and its shadow visibility scaling have no counterpart in this fork, which renders fake glass through `LiquidGlassSettings`.

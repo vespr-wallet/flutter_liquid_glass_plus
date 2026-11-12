@@ -4,47 +4,14 @@ import 'package:flutter/rendering.dart';
 import 'package:meta/meta.dart';
 
 @internal
-mixin TransformTrackingRepaintBoundaryMixin on RenderProxyBox {
-  @override
-  GeometryTransformTrackingLayer? get layer =>
-      super.layer as GeometryTransformTrackingLayer?;
-
-  @override
-  bool get isRepaintBoundary => true;
-
-  @override
-  OffsetLayer updateCompositedLayer({
-    covariant GeometryTransformTrackingLayer? oldLayer,
-  }) {
-    final layer = oldLayer ??= GeometryTransformTrackingLayer();
-
-    // ignore: cascade_invocations
-    layer
-      ..renderObject = this
-      ..onTransformChanged = () {
-        if (attached) {
-          onTransformChanged();
-        }
-      };
-
-    return layer;
-  }
-
-  @mustCallSuper
-  @override
-  void paint(PaintingContext context, ui.Offset offset) {
-    layer!.offset = offset;
-    super.paint(context, offset);
-  }
-
-  void onTransformChanged();
-}
-
-@internal
 mixin TransformTrackingRenderObjectMixin on RenderProxyBox {
+  // Only this mixin sets the layer, so it is always a
+  // GeometryTransformTrackingLayer when present.
   @override
-  GeometryTransformTrackingLayer? get layer =>
-      super.layer as GeometryTransformTrackingLayer?;
+  GeometryTransformTrackingLayer? get layer => switch (super.layer) {
+        final GeometryTransformTrackingLayer layer => layer,
+        _ => null,
+      };
 
   @override
   @nonVirtual
@@ -56,8 +23,8 @@ mixin TransformTrackingRenderObjectMixin on RenderProxyBox {
   @mustCallSuper
   @override
   void paint(PaintingContext context, ui.Offset offset) {
-    setUpLayer(offset);
-    context.pushLayer(layer!, (context, offset) {}, offset);
+    final layer = setUpLayer(offset);
+    context.pushLayer(layer, (context, offset) {}, offset);
     super.paint(context, offset);
   }
 
