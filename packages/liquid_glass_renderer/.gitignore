@@ -27,3 +27,6 @@ pubspec.lock
 pubspec_overrides.yaml
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# Golden test failure output (diff images)
+test/src/failures/

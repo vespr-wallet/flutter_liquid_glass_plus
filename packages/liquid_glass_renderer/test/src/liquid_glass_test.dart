@@ -21,6 +21,7 @@ void main() {
     group('LiquidRoundedSuperellipse', () {
       goldenTest(
         'should render a rounded superellipse with different thickness',
+        skip: skipPlatformGoldens,
         fileName: 'rounded_superellipse_thicknesses',
         pumpBeforeTest: pumpOnce,
         builder: () => GoldenTestGroup(
@@ -49,6 +50,7 @@ void main() {
 
       goldenTest(
         'should render a rounded superellipse with different radii',
+        skip: skipPlatformGoldens,
         fileName: 'rounded_superellipse_radii',
         pumpBeforeTest: pumpOnce,
         builder: () {
