@@ -2,6 +2,7 @@
 
 - **FIX**: removing a `LiquidStretch` while a drag is in progress no longer throws `setState() called after dispose()` (upstream [88dcd26](https://github.com/whynotmake-it/flutter_liquid_glass/commit/88dcd26)). A cancelled pointer now also ends the stretch instead of leaving it stuck (fork addition).
 - **FEAT**: new `gestureMode` option on `GlassGlow` and `LiquidStretch` (`GestureMode.listener` by default, unchanged behaviour; `GestureMode.gestureDetector` lets nested buttons claim the gesture; a `LiquidStretch` and `GlassGlow` nested in each other share one pan recognizer so both effects follow the drag, which is a fork addition) (upstream [916b019](https://github.com/whynotmake-it/flutter_liquid_glass/commit/916b019)).
+- **PERF**: fake glass skips its `BackdropFilterLayer` when the filter would not change the backdrop (no frost, no saturation change, no fake refraction) and paints the tint, highlights and content directly (upstream [58bc74d](https://github.com/whynotmake-it/flutter_liquid_glass/commit/58bc74d)). On Impeller this also fixes a slightly softened backdrop in that case, because the zero-sigma blur layer wasn't a pure no-op (the fork's counterpart of the zero-blur part of upstream [77a373c](https://github.com/whynotmake-it/flutter_liquid_glass/commit/77a373c)).
 
 ## 0.3.3
 
