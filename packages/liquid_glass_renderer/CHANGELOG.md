@@ -2,6 +2,7 @@
 
 - Builds cleanly on Flutter 3.50: library code imports `package:flutter/widgets.dart` instead of the deprecated `package:flutter/material.dart` (the minimum Flutter version is unchanged).
 - Replaced the deprecated `EquatableMixin` with `Equatable` used as a mixin (same equality semantics); `equatable` now requires `^2.1.0`.
+- Dependencies: `equatable` ^2.0.7 → ^2.1.0; dev `alchemist` ^0.12.1 → ^0.14.1; example dependencies moved to versions that resolve on Flutter 3.50 (`rivership` 0.4, `heroine` 0.7, `smooth_sheets` 1.3, `google_fonts` 9, `flex_color_picker` 4). Toolchain: Flutter 3.50.0 (`.fvmrc`, new `.tool-versions`).
 
 ## 0.3.2
 
