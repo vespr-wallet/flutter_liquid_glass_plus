@@ -394,6 +394,7 @@ void main() {
 
     goldenTest(
       'paints shadows only outside the glass, whatever the blur style',
+      skip: skipPlatformGoldens,
       fileName: 'glass_shadows_outside_only',
       pumpBeforeTest: pumpOnce,
       builder: () => GoldenTestGroup(
