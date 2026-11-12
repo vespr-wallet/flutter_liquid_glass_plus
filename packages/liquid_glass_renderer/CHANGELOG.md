@@ -1,3 +1,7 @@
+## Unreleased
+
+- **PERF**: fake glass skips its `BackdropFilterLayer` when the filter would not change the backdrop (no frost, no saturation change, no fake refraction) and paints the tint, highlights and content directly (upstream [58bc74d](https://github.com/whynotmake-it/flutter_liquid_glass/commit/58bc74d)). On Impeller this also fixes a slightly softened backdrop in that case, because the zero-sigma blur layer wasn't a pure no-op (the fork's counterpart of the zero-blur part of upstream [77a373c](https://github.com/whynotmake-it/flutter_liquid_glass/commit/77a373c)).
+
 ## 0.3.3
 
 - Builds cleanly on Flutter 3.50: library code imports `package:flutter/widgets.dart` instead of the deprecated `package:flutter/material.dart` (the minimum Flutter version is unchanged).
