@@ -39,19 +39,11 @@ Widget _app(Widget child) => Directionality(
 
 void main() {
   group('LiquidGlass clip', () {
-    Clip clipOf<T extends Widget>(WidgetTester tester) {
-      return switch (tester.widget<T>(find.byType(T))) {
-        final ClipRSuperellipse clip => clip.clipBehavior,
-        final ClipRRect clip => clip.clipBehavior,
-        final ClipOval clip => clip.clipBehavior,
-        final other => throw StateError('Unexpected ${other.runtimeType}'),
-      };
-    }
-
     List<Clip> clips(WidgetTester tester) => [
-          clipOf<ClipRSuperellipse>(tester),
-          clipOf<ClipRRect>(tester),
-          clipOf<ClipOval>(tester),
+          tester
+              .widget<ClipRSuperellipse>(find.byType(ClipRSuperellipse))
+              .clipBehavior,
+          tester.widget<ClipRRect>(find.byType(ClipRRect)).clipBehavior,
         ];
 
     testWidgets('clips with ClipRSuperellipse for LiquidRoundedSuperellipse',
@@ -59,7 +51,7 @@ void main() {
       await tester.pumpWidget(
         _app(_glass(const LiquidRoundedSuperellipse(borderRadius: 30))),
       );
-      expect(clips(tester), [Clip.hardEdge, Clip.none, Clip.none]);
+      expect(clips(tester), [Clip.hardEdge, Clip.none]);
       expect(find.byType(ClipPath), findsNothing);
     });
 
@@ -68,14 +60,20 @@ void main() {
       await tester.pumpWidget(
         _app(_glass(const LiquidRoundedRectangle(borderRadius: 30))),
       );
-      expect(clips(tester), [Clip.none, Clip.hardEdge, Clip.none]);
+      expect(clips(tester), [Clip.none, Clip.hardEdge]);
       expect(find.byType(ClipPath), findsNothing);
     });
 
-    testWidgets('clips with ClipOval for LiquidOval', (tester) async {
+    testWidgets('clips with an oval ClipRRect for LiquidOval', (tester) async {
       await tester.pumpWidget(_app(_glass(const LiquidOval())));
-      expect(clips(tester), [Clip.none, Clip.none, Clip.hardEdge]);
+      expect(clips(tester), [Clip.none, Clip.hardEdge]);
+      expect(find.byType(ClipOval), findsNothing);
       expect(find.byType(ClipPath), findsNothing);
+      final clip = tester.widget<ClipRRect>(find.byType(ClipRRect));
+      expect(
+        clip.clipper?.getClip(const Size(200, 100)),
+        const RRect.fromLTRBXY(0, 0, 200, 100, 100, 50),
+      );
     });
 
     testWidgets('keeps the clipBehavior', (tester) async {
@@ -88,7 +86,69 @@ void main() {
           ),
         ),
       );
-      expect(clips(tester), [Clip.none, Clip.antiAlias, Clip.none]);
+      expect(clips(tester), [Clip.none, Clip.antiAlias]);
+    });
+
+    group('hit tests the shape', () {
+      Future<int> tapAt(
+        WidgetTester tester,
+        LiquidShape shape,
+        Offset fromTopLeft,
+      ) async {
+        var taps = 0;
+        await tester.pumpWidget(
+          _app(
+            LiquidGlass.withOwnLayer(
+              shape: shape,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => taps++,
+                child: const SizedBox.square(dimension: 200),
+              ),
+            ),
+          ),
+        );
+        await tester.tapAt(
+          tester.getTopLeft(find.byType(GestureDetector)) + fromTopLeft,
+        );
+        return taps;
+      }
+
+      for (final (name, shape) in const [
+        ('LiquidRoundedRectangle', LiquidRoundedRectangle(borderRadius: 0)),
+        (
+          'LiquidRoundedSuperellipse',
+          LiquidRoundedSuperellipse(borderRadius: 0),
+        ),
+      ]) {
+        testWidgets('$name: a square corner is tappable', (tester) async {
+          expect(await tapAt(tester, shape, const Offset(5, 5)), 1);
+        });
+      }
+
+      testWidgets('LiquidOval: the center is tappable', (tester) async {
+        expect(
+          await tapAt(tester, const LiquidOval(), const Offset(100, 100)),
+          1,
+        );
+      });
+
+      testWidgets('LiquidOval: a corner outside the oval is not tappable',
+          (tester) async {
+        expect(await tapAt(tester, const LiquidOval(), const Offset(5, 5)), 0);
+      });
+
+      testWidgets('LiquidRoundedRectangle: a cut corner is not tappable',
+          (tester) async {
+        expect(
+          await tapAt(
+            tester,
+            const LiquidRoundedRectangle(borderRadius: 50),
+            const Offset(5, 5),
+          ),
+          0,
+        );
+      });
     });
 
     testWidgets('keeps the child state when the shape type changes',
