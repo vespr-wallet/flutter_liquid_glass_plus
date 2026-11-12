@@ -1,3 +1,8 @@
+## 0.3.3
+
+- Builds cleanly on Flutter 3.50: library code imports `package:flutter/widgets.dart` instead of the deprecated `package:flutter/material.dart` (the minimum Flutter version is unchanged).
+- Replaced the deprecated `EquatableMixin` with `Equatable` used as a mixin (same equality semantics); `equatable` now requires `^2.1.0`.
+
 ## 0.3.2
 
 - Fixed android and web compilation bugs in Flutter 3.44

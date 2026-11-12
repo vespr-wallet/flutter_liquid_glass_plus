@@ -3,7 +3,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
 import 'package:meta/meta.dart';
 
@@ -233,7 +233,7 @@ mixin FakeGlassEffectsMixin {
         .clamp(kFakeGlassShadowAlphaMin, kFakeGlassShadowAlphaMax);
 
     final innerShadow = Paint()
-      ..color = Colors.black.withValues(alpha: shadowAlpha)
+      ..color = const Color(0xFF000000).withValues(alpha: shadowAlpha)
       ..style = PaintingStyle.stroke
       ..strokeWidth = shadowWidth
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, shadowWidth / 2);
@@ -265,9 +265,9 @@ mixin FakeGlassEffectsMixin {
     // Create a gradient that follows the light direction
     final gradient = LinearGradient(
       colors: [
-        Colors.white.withValues(alpha: gradientAlpha),
-        Colors.transparent,
-        Colors.black.withValues(
+        const Color(0xFFFFFFFF).withValues(alpha: gradientAlpha),
+        const Color(0x00000000),
+        const Color(0xFF000000).withValues(
           alpha: gradientAlpha * kFakeGlassDepthGradientDarkRatio,
         ),
       ],

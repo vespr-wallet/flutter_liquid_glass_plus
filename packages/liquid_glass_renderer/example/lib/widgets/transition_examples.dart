@@ -1,3 +1,7 @@
+// The example's third-party UI packages still build on package:flutter's
+// material/cupertino libraries, so it stays on them for now.
+// ignore_for_file: deprecated_member_use
+
 // Isolated transition examples demonstrating LiquidGlass animations
 // These examples showcase flat-to-glass, settings, and shape transitions
 // Includes performance measurement for A/B testing real vs fake glass
@@ -682,7 +686,7 @@ class _SectionHeader extends StatelessWidget {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
           if (onRefresh != null)
             CupertinoButton(
               padding: EdgeInsets.zero,

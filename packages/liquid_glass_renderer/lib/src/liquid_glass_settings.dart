@@ -11,7 +11,7 @@ import 'package:liquid_glass_plus/src/liquid_glass_render_scope.dart';
 /// These settings control the shader-based glass effects that require Impeller.
 /// Liquid glass using these settings provides superior visual quality and
 /// better performance compared to fake glass rendering.
-class LiquidGlassConfigs with EquatableMixin {
+class LiquidGlassConfigs with Equatable {
   /// Creates [LiquidGlassConfigs] with the given values.
   const LiquidGlassConfigs({
     this.chromaticAberration = 0.01,
@@ -78,7 +78,7 @@ class LiquidGlassConfigs with EquatableMixin {
 ///
 /// Note: Fake glass is a fallback for non-Impeller environments. Impeller-based
 /// liquid glass provides better visual fidelity AND better performance.
-class FakeGlassConfigs with EquatableMixin {
+class FakeGlassConfigs with Equatable {
   /// Creates [FakeGlassConfigs] with the given values.
   const FakeGlassConfigs({
     this.forceEnabled = false,
@@ -145,7 +145,7 @@ class FakeGlassConfigs with EquatableMixin {
 ///
 /// **Performance note:** Impeller-based liquid glass actually provides better
 /// performance than fake glass, in addition to superior visual quality.
-class LiquidGlassSettings with EquatableMixin {
+class LiquidGlassSettings with Equatable {
   /// Creates a new [LiquidGlassSettings] with the given settings.
   ///
   /// Set [frostIntensity] > 0 to enable backdrop blur (frosted glass).

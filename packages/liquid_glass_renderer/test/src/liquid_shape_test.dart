@@ -1,3 +1,7 @@
+// alchemist still builds goldens on package:flutter/material.dart, so the
+// tests stay on it instead of material_ui to keep one Theme hierarchy.
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
