@@ -14,9 +14,7 @@ enum GlassPanRole {
 /// Receives pan events from a [GlassPanHub].
 @internal
 abstract interface class GlassPanListener {
-  /// [downPosition] is where the pointer went down, [globalPosition] is
-  /// where the pan won the gesture arena.
-  void onHubPanStart(Offset globalPosition, Offset downPosition);
+  void onHubPanStart(Offset globalPosition);
   void onHubPanUpdate(Offset globalPosition);
   void onHubPanEnd();
 }
@@ -31,9 +29,9 @@ class GlassPanHub {
 
   void removeListener(GlassPanListener listener) => _listeners.remove(listener);
 
-  void start(Offset globalPosition, Offset downPosition) {
+  void start(Offset globalPosition) {
     for (final listener in List.of(_listeners)) {
-      listener.onHubPanStart(globalPosition, downPosition);
+      listener.onHubPanStart(globalPosition);
     }
   }
 
@@ -120,9 +118,13 @@ class _GlassPanRegionState extends State<GlassPanRegion>
   /// null when this region is not following one.
   Offset? _sharedPanPosition;
 
-  /// Where the pointer of this region's own pan went down, in global
-  /// coordinates.
-  Offset? _panDownPosition;
+  /// Pointers that are down on this region, according to hit testing. A
+  /// joined region only follows a shared pan while one of them is down, so
+  /// an `IgnorePointer` above it or an obscuring sibling keeps it out, just
+  /// as they would keep out its own recognizer.
+  // ponytail: any pointer down here counts, not just the one driving the
+  // outer pan; track the pan's pointer if multi-touch ever matters.
+  final _pointersDown = <int>{};
 
   @override
   void didChangeDependencies() {
@@ -134,6 +136,7 @@ class _GlassPanRegionState extends State<GlassPanRegion>
     _joinedHub = hub;
     hub?.addListener(this);
     _sharedPanPosition = null;
+    _pointersDown.clear();
   }
 
   @override
@@ -148,15 +151,12 @@ class _GlassPanRegionState extends State<GlassPanRegion>
       };
 
   @override
-  void onHubPanStart(Offset globalPosition, Offset downPosition) {
-    if (!mounted) return;
-    final box = _box;
-    if (box == null) return;
+  void onHubPanStart(Offset globalPosition) {
     // Only follow shared pans whose pointer went down on this region. The
     // pan may have moved out of it before winning the arena.
-    if (!(Offset.zero & box.size).contains(box.globalToLocal(downPosition))) {
-      return;
-    }
+    if (!mounted || _pointersDown.isEmpty) return;
+    final box = _box;
+    if (box == null) return;
     final local = box.globalToLocal(globalPosition);
     _sharedPanPosition = local;
     widget.onStart(local);
@@ -185,10 +185,7 @@ class _GlassPanRegionState extends State<GlassPanRegion>
   void _handleStart(DragStartDetails details) {
     if (!mounted) return;
     widget.onStart(details.localPosition);
-    _ownHub.start(
-      details.globalPosition,
-      _panDownPosition ?? details.globalPosition,
-    );
+    _ownHub.start(details.globalPosition);
   }
 
   void _handleUpdate(DragUpdateDetails details) {
@@ -211,13 +208,18 @@ class _GlassPanRegionState extends State<GlassPanRegion>
       return _GlassPanScope(
         hub: null,
         role: widget.role,
-        child: widget.child,
+        child: Listener(
+          behavior: widget.behavior,
+          onPointerDown: (event) => _pointersDown.add(event.pointer),
+          onPointerUp: (event) => _pointersDown.remove(event.pointer),
+          onPointerCancel: (event) => _pointersDown.remove(event.pointer),
+          child: widget.child,
+        ),
       );
     }
 
     return GestureDetector(
       behavior: widget.behavior,
-      onPanDown: (details) => _panDownPosition = details.globalPosition,
       onPanStart: _handleStart,
       onPanUpdate: _handleUpdate,
       onPanEnd: (details) => _handleEnd(),

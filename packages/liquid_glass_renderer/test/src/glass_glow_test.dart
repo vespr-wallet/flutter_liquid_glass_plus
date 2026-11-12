@@ -277,6 +277,27 @@ void main() {
           await tester.pumpAndSettle();
         });
 
+        testWidgets(
+            '$nesting: the inner effect ignores a pan when it ignores pointers',
+            (tester) async {
+          await tester.pumpWidget(
+            buildCombo(
+              stretchOutside: stretchOutside,
+              between: (inner) => IgnorePointer(child: inner),
+            ),
+          );
+
+          final gesture =
+              await tester.startGesture(tester.getCenter(find.byKey(childKey)));
+          await gesture.moveBy(const Offset(200, 0));
+          await tester.pumpAndSettle();
+
+          expect(innerActive(tester), isFalse);
+
+          await gesture.up();
+          await tester.pumpAndSettle();
+        });
+
         testWidgets('$nesting: can handle unmount while dragging',
             (tester) async {
           await tester.pumpWidget(buildCombo(stretchOutside: stretchOutside));
