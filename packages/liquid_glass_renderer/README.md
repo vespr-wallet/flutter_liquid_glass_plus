@@ -310,6 +310,20 @@ LiquidStretch(
 
 The widget listens to drag gestures and applies smooth squash and stretch transformations without interfering with other gestures.
 
+#### Nested interactive widgets
+
+By default, `GlassGlow` and `LiquidStretch` react to raw pointer events (`GestureMode.listener`), so they trigger even when a nested button handles the tap. Pass `gestureMode: GestureMode.gestureDetector` to make them take part in the gesture arena instead: nested widgets such as buttons can then claim the gesture, and the glow or stretch only starts once a drag wins.
+
+```dart
+LiquidStretch(
+  gestureMode: GestureMode.gestureDetector,
+  child: GlassGlow(
+    gestureMode: GestureMode.gestureDetector,
+    child: IconButton(onPressed: () {}, icon: const Icon(Icons.add)),
+  ),
+)
+```
+
 ---
 
 For more details, check out the API documentation in the source code.

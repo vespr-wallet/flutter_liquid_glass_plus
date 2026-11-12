@@ -45,8 +45,9 @@ class LiquidStretchScale extends InheritedWidget {
 /// A widget that provides a squash and stretch effect to its child based on
 /// user interaction.
 ///
-/// Will listen to drag gestures from the user without interfering with other
-/// gestures.
+/// By default it listens to raw pointer events without interfering with other
+/// gestures. Set [gestureMode] to [GestureMode.gestureDetector] to let nested
+/// interactive widgets (such as buttons) claim the gesture instead.
 ///
 /// ## Optional Feature
 ///
@@ -67,6 +68,7 @@ class LiquidStretch extends StatelessWidget {
     this.stretch = .5,
     this.resistance = .08,
     this.hitTestBehavior = HitTestBehavior.opaque,
+    this.gestureMode = GestureMode.listener,
     super.key,
   })  : assert(interactionScale > 0, 'interactionScale must be > 0'),
         assert(resistance >= 0, 'resistance must be >= 0');
@@ -106,6 +108,11 @@ class LiquidStretch extends StatelessWidget {
   /// Defaults to [HitTestBehavior.opaque].
   final HitTestBehavior hitTestBehavior;
 
+  /// {@macro gesture_mode}
+  ///
+  /// Defaults to [GestureMode.listener].
+  final GestureMode gestureMode;
+
   /// The child widget to apply the stretch effect to.
   final Widget child;
 
@@ -117,6 +124,7 @@ class LiquidStretch extends StatelessWidget {
 
     return GlassDragBuilder(
       behavior: hitTestBehavior,
+      gestureMode: gestureMode,
       builder: (context, dragValue, child) {
         final scale = dragValue == null ? 1.0 : interactionScale;
         return SingleMotionBuilder(
