@@ -18,6 +18,7 @@ A Flutter package for creating a stunning "liquid glass" or "frosted glass" effe
 -   🎨 **Highly Customizable**: Adjust thickness, color tint, lighting, and more.
 -   🔍 **Background Effects**: Apply background blur and refraction.
 -   ✨ **Interactive Glow**: Add touch-responsive glow effects to glass surfaces.
+-   🔲 **Shadows**: Add `BoxShadow`s to glass shapes, drawn with the canvas primitive that matches the shape.
 -   🎭 **Fake Glass**: Skia-compatible glass approximation using backdrop filters instead of custom shaders.
 -   🤸 **Stretch Effects**: Apply organic squash and stretch animations to glass widgets.
 -   🎬 **Implicit Animations**: Shape and settings changes are automatically animated (changing between shape types not yet supported).
@@ -233,6 +234,35 @@ The `child` of a `LiquidGlass` widget can be rendered either "inside" the glass 
 
 -   `glassContainsChild: false` (default): The child is rendered normally on top of the glass effect.
 -   `glassContainsChild: true`: The child is part of the glass, affected by color tint and refraction.
+
+### Shadows
+
+Add shadows to any `LiquidGlass` with the `shadows` parameter. They're drawn with the canvas primitive that matches the glass shape (`drawRSuperellipse`, `drawRRect`, `drawOval`) rather than by blurring an arbitrary `Path`, so they stay cheap.
+
+For the best result, use `BlurStyle.outer` without an offset. The shadow then sits evenly around the edge and is never drawn over the glass itself. Other blur styles also paint inside the shape, on top of the glass. A tight, subtle shadow combined with a softer, wider one works well:
+
+```dart
+LiquidGlass.withOwnLayer(
+  shape: LiquidRoundedSuperellipse(borderRadius: 30),
+  shadows: const [
+    // Tight, subtle edge shadow
+    BoxShadow(
+      blurStyle: BlurStyle.outer,
+      color: Color.from(alpha: 0.05, red: 0, green: 0, blue: 0),
+      blurRadius: 2,
+    ),
+    // Softer, wider ambient shadow
+    BoxShadow(
+      blurStyle: BlurStyle.outer,
+      color: Color.from(alpha: 0.1, red: 0, green: 0, blue: 0),
+      blurRadius: 30,
+    ),
+  ],
+  child: const SizedBox.square(dimension: 150),
+)
+```
+
+Shadows work with both `LiquidGlass` constructors and in fake glass mode.
 
 ### Fake Glass Mode: Skia-Compatible Alternative
 

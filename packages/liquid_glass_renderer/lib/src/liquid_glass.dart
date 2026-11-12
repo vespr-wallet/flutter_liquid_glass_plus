@@ -6,6 +6,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
+import 'package:liquid_glass_plus/src/glass_shadow.dart';
+import 'package:liquid_glass_plus/src/internal/optimized_clip.dart';
 import 'package:liquid_glass_plus/src/internal/render_liquid_glass_geometry.dart';
 import 'package:liquid_glass_plus/src/internal/transform_tracking_repaint_boundary_mixin.dart';
 import 'package:liquid_glass_plus/src/rendering/liquid_glass_render_object.dart';
@@ -42,6 +44,7 @@ class LiquidGlass extends StatefulWidget {
     required this.shape,
     this.glassContainsChild = false,
     this.clipBehavior = Clip.hardEdge,
+    this.shadows = const [],
     this.debugLabel,
     super.key,
   }) : ownLayerSettings = null;
@@ -63,6 +66,7 @@ class LiquidGlass extends StatefulWidget {
     super.key,
     this.glassContainsChild = false,
     this.clipBehavior = Clip.hardEdge,
+    this.shadows = const [],
     this.debugLabel,
   }) : ownLayerSettings = settings;
 
@@ -98,6 +102,21 @@ class LiquidGlass extends StatefulWidget {
   ///
   /// Defaults to [Clip.hardEdge], so [child] will be clipped to the shape.
   final Clip clipBehavior;
+
+  /// Shadows painted around the glass shape.
+  ///
+  /// They are drawn with the canvas primitive that matches [shape]
+  /// (`drawRSuperellipse`, `drawRRect`, `drawOval`) instead of blurring an
+  /// arbitrary path, so they stay cheap.
+  ///
+  /// Use [BlurStyle.outer] without an offset for the most natural result: the
+  /// shadow stays evenly around the edge and is never drawn over the glass
+  /// itself. Other blur styles also paint inside the shape, on top of the
+  /// glass, because the glass is rendered by the [LiquidGlassLayer] before its
+  /// children.
+  ///
+  /// Defaults to no shadows.
+  final List<BoxShadow> shadows;
 
   /// The settings for this glass if it is supposed to create its own layer.
   final LiquidGlassSettings? ownLayerSettings;
@@ -216,14 +235,29 @@ class _LiquidGlassState extends State<LiquidGlass>
   Widget _buildGlassContent(BuildContext context, LiquidShape shape) {
     final effectiveSettings = LiquidGlassSettings.of(context);
 
-    final glassChild = ClipPath(
-      clipper: ShapeBorderClipper(shape: shape),
+    final glassChild = OptimizedClip(
+      shape: shape,
       clipBehavior: widget.clipBehavior,
       child: GlassGlowLayer(
         child: widget.child,
       ),
     );
 
+    // Always present (even without shadows) so adding or removing shadows
+    // doesn't remount the glass render object.
+    return GlassShadow(
+      shape: shape,
+      shadows: widget.shadows,
+      child: _buildRawGlass(context, shape, effectiveSettings, glassChild),
+    );
+  }
+
+  Widget _buildRawGlass(
+    BuildContext context,
+    LiquidShape shape,
+    LiquidGlassSettings effectiveSettings,
+    Widget glassChild,
+  ) {
     // Use fake glass when forced via settings or when Impeller is not available
     if (effectiveSettings.shouldUseFakeGlass) {
       return _RawLiquidGlass(
