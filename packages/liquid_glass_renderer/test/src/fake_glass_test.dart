@@ -88,6 +88,7 @@ void main() {
 
     goldenTest(
       'renders with zero blur',
+      skip: skipPlatformGoldens,
       fileName: 'fake_glass_zero_blur',
       pumpBeforeTest: pumpOnce,
       builder: () => GoldenTestGroup(
