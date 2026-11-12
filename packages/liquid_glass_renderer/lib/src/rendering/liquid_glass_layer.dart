@@ -310,6 +310,21 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     return _cachedSaturationMatrix!;
   }
 
+  /// Saturation boosted to match the real glass shader appearance.
+  double get _fakeGlassBoostedSaturation =>
+      (1.0 + (settings.saturation - 1.0) * kFakeGlassSaturationMultiplier)
+          .clamp(0.0, double.infinity);
+
+  /// Whether the fake glass backdrop filter would change the backdrop at all.
+  ///
+  /// When it wouldn't (no blur, no saturation change and no refraction), the
+  /// [BackdropFilterLayer] is skipped: it would only cost an extra backdrop
+  /// read and an offscreen pass for an identity filter.
+  bool get _hasFakeGlassBackdropEffect =>
+      settings.frostIntensity != 0 ||
+      _fakeGlassBoostedSaturation != 1.0 ||
+      settings.fakeGlassConfigs.refraction > 0;
+
   /// Builds a combined filter for fake glass effects.
   ///
   /// Uses the layer's size for refraction calculations to ensure consistent
@@ -329,10 +344,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
         ? createRefractionFilter(center, refraction, layerBounds.size)
         : null;
 
-    // Boost saturation to match real glass shader appearance
-    final boostedSaturation =
-        (1.0 + (settings.saturation - 1.0) * kFakeGlassSaturationMultiplier)
-            .clamp(0.0, double.infinity);
+    final boostedSaturation = _fakeGlassBoostedSaturation;
     final saturationFilter = boostedSaturation != 1.0
         ? ColorFilter.matrix(_getSaturationMatrix(boostedSaturation))
         : null;
@@ -488,8 +500,6 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
       return;
     }
 
-    // Build combined filter and clip path
-    final combinedFilter = _buildFakeGlassFilter();
     final clipPath = Path();
     for (final geometry in attachedShapes) {
       clipPath.addPath(
@@ -499,11 +509,36 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
       );
     }
 
-    // Always use the same layer handles to avoid animation glitches
-    final filterLayer = (_fakeGlassFilterLayerHandle.layer ??=
-        BackdropFilterLayer())
-      ..backdropKey = backdropKey
-      ..filter = combinedFilter;
+    void paintInsideGlass(PaintingContext context, Offset offset) {
+      // Paint inside-glass content
+      paintShapeContents(
+        context,
+        offset,
+        attachedShapes,
+        insideGlass: true,
+      );
+
+      // Paint fake glass visual effects for each shape
+      for (final (_, geometry, transform) in attachedShapes) {
+        final transformedPath = geometry.path.transform(transform.storage);
+        final transformedBounds = MatrixUtils.transformRect(
+          transform,
+          geometry.bounds,
+        );
+        paintFakeGlassEffects(
+          context.canvas,
+          transformedPath,
+          transformedBounds,
+        );
+      }
+    }
+
+    final hasBackdropEffect = _hasFakeGlassBackdropEffect;
+    if (!hasBackdropEffect) {
+      // Nothing to filter: paint the tint, highlights and content directly
+      // inside the clip, without a BackdropFilterLayer.
+      _fakeGlassFilterLayerHandle.layer = null;
+    }
 
     _fakeGlassClipPathLayerHandle.layer = context.pushClipPath(
       needsCompositing,
@@ -511,34 +546,17 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
       layerBounds,
       clipPath,
       (context, offset) {
-        context.pushLayer(
-          filterLayer,
-          (context, offset) {
-            // Paint inside-glass content
-            paintShapeContents(
-              context,
-              offset,
-              attachedShapes,
-              insideGlass: true,
-            );
+        if (!hasBackdropEffect) {
+          paintInsideGlass(context, offset);
+          return;
+        }
 
-            // Paint fake glass visual effects for each shape
-            for (final (_, geometry, transform) in attachedShapes) {
-              final transformedPath =
-                  geometry.path.transform(transform.storage);
-              final transformedBounds = MatrixUtils.transformRect(
-                transform,
-                geometry.bounds,
-              );
-              paintFakeGlassEffects(
-                context.canvas,
-                transformedPath,
-                transformedBounds,
-              );
-            }
-          },
-          offset,
-        );
+        // Reuse the same layer while it is needed to avoid animation glitches
+        final filterLayer = (_fakeGlassFilterLayerHandle.layer ??=
+            BackdropFilterLayer())
+          ..backdropKey = backdropKey
+          ..filter = _buildFakeGlassFilter();
+        context.pushLayer(filterLayer, paintInsideGlass, offset);
       },
       oldLayer: _fakeGlassClipPathLayerHandle.layer,
     );
