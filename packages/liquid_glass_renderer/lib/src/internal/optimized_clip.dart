@@ -7,6 +7,11 @@ import 'package:meta/meta.dart';
 /// Compared to a [ClipPath] with a [ShapeBorderClipper], this uses the
 /// dedicated clip primitive for each shape ([ClipRSuperellipse], [ClipRRect],
 /// [ClipOval]), which is cheaper than clipping to an arbitrary path.
+///
+/// All three clips are always built, nested, and only the one matching
+/// [shape] clips; the others use [Clip.none], which pushes no layer and
+/// doesn't affect hit testing. Keeping the same widgets means a change of
+/// shape type doesn't remount [child] and reset its state.
 @internal
 class OptimizedClip extends StatelessWidget {
   const OptimizedClip({
@@ -24,21 +29,28 @@ class OptimizedClip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (shape) {
-      LiquidRoundedSuperellipse(:final borderRadius) => ClipRSuperellipse(
-          clipBehavior: clipBehavior,
-          borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
+    final shape = this.shape;
+    return ClipRSuperellipse(
+      clipBehavior:
+          shape is LiquidRoundedSuperellipse ? clipBehavior : Clip.none,
+      borderRadius: switch (shape) {
+        LiquidRoundedSuperellipse(:final borderRadius) =>
+          BorderRadius.all(Radius.circular(borderRadius)),
+        _ => BorderRadius.zero,
+      },
+      child: ClipRRect(
+        clipBehavior:
+            shape is LiquidRoundedRectangle ? clipBehavior : Clip.none,
+        borderRadius: switch (shape) {
+          LiquidRoundedRectangle(:final borderRadius) =>
+            BorderRadius.all(Radius.circular(borderRadius)),
+          _ => BorderRadius.zero,
+        },
+        child: ClipOval(
+          clipBehavior: shape is LiquidOval ? clipBehavior : Clip.none,
           child: child,
         ),
-      LiquidRoundedRectangle(:final borderRadius) => ClipRRect(
-          clipBehavior: clipBehavior,
-          borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
-          child: child,
-        ),
-      LiquidOval() => ClipOval(
-          clipBehavior: clipBehavior,
-          child: child,
-        ),
-    };
+      ),
+    );
   }
 }

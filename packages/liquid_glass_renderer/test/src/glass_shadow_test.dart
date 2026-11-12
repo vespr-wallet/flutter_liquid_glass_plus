@@ -39,26 +39,42 @@ Widget _app(Widget child) => Directionality(
 
 void main() {
   group('LiquidGlass clip', () {
-    testWidgets('uses ClipRSuperellipse for LiquidRoundedSuperellipse',
+    Clip clipOf<T extends Widget>(WidgetTester tester) {
+      return switch (tester.widget<T>(find.byType(T))) {
+        final ClipRSuperellipse clip => clip.clipBehavior,
+        final ClipRRect clip => clip.clipBehavior,
+        final ClipOval clip => clip.clipBehavior,
+        final other => throw StateError('Unexpected ${other.runtimeType}'),
+      };
+    }
+
+    List<Clip> clips(WidgetTester tester) => [
+          clipOf<ClipRSuperellipse>(tester),
+          clipOf<ClipRRect>(tester),
+          clipOf<ClipOval>(tester),
+        ];
+
+    testWidgets('clips with ClipRSuperellipse for LiquidRoundedSuperellipse',
         (tester) async {
       await tester.pumpWidget(
         _app(_glass(const LiquidRoundedSuperellipse(borderRadius: 30))),
       );
-      expect(find.byType(ClipRSuperellipse), findsOneWidget);
+      expect(clips(tester), [Clip.hardEdge, Clip.none, Clip.none]);
       expect(find.byType(ClipPath), findsNothing);
     });
 
-    testWidgets('uses ClipRRect for LiquidRoundedRectangle', (tester) async {
+    testWidgets('clips with ClipRRect for LiquidRoundedRectangle',
+        (tester) async {
       await tester.pumpWidget(
         _app(_glass(const LiquidRoundedRectangle(borderRadius: 30))),
       );
-      expect(find.byType(ClipRRect), findsOneWidget);
+      expect(clips(tester), [Clip.none, Clip.hardEdge, Clip.none]);
       expect(find.byType(ClipPath), findsNothing);
     });
 
-    testWidgets('uses ClipOval for LiquidOval', (tester) async {
+    testWidgets('clips with ClipOval for LiquidOval', (tester) async {
       await tester.pumpWidget(_app(_glass(const LiquidOval())));
-      expect(find.byType(ClipOval), findsOneWidget);
+      expect(clips(tester), [Clip.none, Clip.none, Clip.hardEdge]);
       expect(find.byType(ClipPath), findsNothing);
     });
 
@@ -67,15 +83,38 @@ void main() {
         _app(
           const LiquidGlass.withOwnLayer(
             shape: LiquidRoundedRectangle(borderRadius: 30),
-            clipBehavior: Clip.none,
+            clipBehavior: Clip.antiAlias,
             child: SizedBox.square(dimension: 200),
           ),
         ),
       );
-      expect(
-        tester.widget<ClipRRect>(find.byType(ClipRRect)).clipBehavior,
-        Clip.none,
+      expect(clips(tester), [Clip.none, Clip.antiAlias, Clip.none]);
+    });
+
+    testWidgets('keeps the child state when the shape type changes',
+        (tester) async {
+      var initCount = 0;
+      Widget build(LiquidShape shape) => _app(
+            LiquidGlass.withOwnLayer(
+              shape: shape,
+              child: _Stateful(onInit: () => initCount++),
+            ),
+          );
+
+      await tester.pumpWidget(
+        build(const LiquidRoundedRectangle(borderRadius: 30)),
       );
+      for (final shape in const [
+        LiquidOval(),
+        LiquidRoundedSuperellipse(borderRadius: 30),
+        LiquidRoundedRectangle(borderRadius: 30),
+      ]) {
+        await tester.pumpWidget(build(shape));
+        // Shape changes animate; settle so the new shape type is built.
+        await tester.pumpAndSettle();
+        expect(find.byType(_Stateful), findsOneWidget);
+      }
+      expect(initCount, 1);
     });
   });
 
@@ -189,4 +228,24 @@ void main() {
       ),
     );
   });
+}
+
+class _Stateful extends StatefulWidget {
+  const _Stateful({required this.onInit});
+
+  final VoidCallback onInit;
+
+  @override
+  State<_Stateful> createState() => _StatefulState();
+}
+
+class _StatefulState extends State<_Stateful> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onInit();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.square(dimension: 200);
 }
