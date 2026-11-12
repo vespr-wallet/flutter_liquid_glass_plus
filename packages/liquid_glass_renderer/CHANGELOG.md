@@ -1,3 +1,7 @@
+## Unreleased
+
+- **FIX**: `LiquidRoundedSuperellipse` glass hit tests its exact shape again. Since 0.4.0 the child clip used `ClipRSuperellipse`, which only hit tests the bounding rect, so taps in the corners outside the shape reached the child. Painting still uses the cheaper `RSuperellipse` clip primitive.
+
 ## 0.4.0
 
 - **FEAT**: new `shadows` parameter on `LiquidGlass` and `LiquidGlass.withOwnLayer` (default: none). Shadows are drawn with the canvas primitive that matches the shape (`drawRSuperellipse`, `drawRRect`, `drawOval`) instead of a blurred path (upstream [9599204](https://github.com/whynotmake-it/flutter_liquid_glass/commit/9599204)). They include upstream's later fixes: superellipse shapes get a superellipse shadow, and spread and offset are applied (upstream [77a373c](https://github.com/whynotmake-it/flutter_liquid_glass/commit/77a373c)). Upstream's `FakeGlass` widget and its shadow visibility scaling have no counterpart in this fork, which renders fake glass through `LiquidGlassSettings`.
