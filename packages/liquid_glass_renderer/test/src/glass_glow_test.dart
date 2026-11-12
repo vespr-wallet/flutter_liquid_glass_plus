@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
@@ -124,9 +126,13 @@ void main() {
         ).size;
       }
 
-      Widget buildCombo({required bool stretchOutside, Widget? child}) {
-        final content = child ??
-            const SizedBox(key: childKey, width: 100, height: 100);
+      Widget buildCombo({
+        required bool stretchOutside,
+        Widget? child,
+        Widget Function(Widget inner)? between,
+      }) {
+        final content =
+            child ?? const SizedBox(key: childKey, width: 100, height: 100);
         Widget stretch(Widget child) => LiquidStretch(
               interactionScale: 1,
               gestureMode: GestureMode.gestureDetector,
@@ -141,8 +147,8 @@ void main() {
           child: Center(
             child: GlassGlowLayer(
               child: stretchOutside
-                  ? stretch(glow(content))
-                  : glow(stretch(content)),
+                  ? stretch((between ?? (w) => w)(glow(content)))
+                  : glow((between ?? (w) => w)(stretch(content))),
             ),
           ),
         );
@@ -155,8 +161,8 @@ void main() {
         testWidgets('$nesting: a drag drives both effects', (tester) async {
           await tester.pumpWidget(buildCombo(stretchOutside: stretchOutside));
 
-          final gesture = await tester
-              .startGesture(tester.getCenter(find.byKey(childKey)));
+          final gesture =
+              await tester.startGesture(tester.getCenter(find.byKey(childKey)));
           await gesture.moveBy(const Offset(200, 0));
           await tester.pumpAndSettle();
 
@@ -196,12 +202,87 @@ void main() {
           expect(tapCount, 1);
         });
 
+        Widget padded(Widget inner) =>
+            Padding(padding: const EdgeInsets.all(50), child: inner);
+
+        // A competing tap keeps the arena open until the pan crosses the
+        // slop, so the pan wins away from where the pointer went down.
+        final tappable = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {},
+          child: const SizedBox(key: childKey, width: 100, height: 100),
+        );
+
+        bool innerActive(WidgetTester tester) => stretchOutside
+            ? hasActiveTouch(tester)
+            : childSize(tester).width > 100;
+
+        testWidgets(
+            '$nesting: the inner effect follows a pan that leaves it '
+            'before winning', (tester) async {
+          await tester.pumpWidget(
+            buildCombo(
+              stretchOutside: stretchOutside,
+              between: padded,
+              child: tappable,
+            ),
+          );
+
+          // Down 5px inside the inner region's right edge. The pan wins after
+          // the pointer has already left the inner region.
+          final gesture = await tester.startGesture(
+            tester.getRect(find.byKey(childKey)).centerRight -
+                const Offset(5, 0),
+          );
+          await gesture.moveBy(const Offset(40, 0));
+          await tester.pump();
+          await gesture.moveBy(const Offset(100, 0));
+          await tester.pumpAndSettle();
+
+          expect(innerActive(tester), isTrue);
+
+          await gesture.up();
+          await tester.pumpAndSettle();
+        });
+
+        testWidgets(
+            '$nesting: the inner effect ignores a pan that starts outside it',
+            (tester) async {
+          await tester.pumpWidget(
+            buildCombo(
+              stretchOutside: stretchOutside,
+              between: (inner) => GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {},
+                child: padded(inner),
+              ),
+              child: tappable,
+            ),
+          );
+
+          // Down in the padding, then move onto the inner region before the
+          // pan wins.
+          final gesture = await tester.startGesture(
+            tester.getRect(find.byKey(childKey)).centerLeft -
+                const Offset(25, 0),
+          );
+          await gesture.moveBy(const Offset(45, 0));
+          await tester.pump();
+          await gesture.moveBy(const Offset(10, 0));
+          await tester.pumpAndSettle();
+
+          expect(innerActive(tester), isFalse);
+
+          await gesture.up();
+          await tester.pumpAndSettle();
+        });
+
         testWidgets('$nesting: can handle unmount while dragging',
             (tester) async {
           await tester.pumpWidget(buildCombo(stretchOutside: stretchOutside));
 
-          final gesture = await tester
-              .startGesture(tester.getCenter(find.byKey(childKey)));
+          final gesture =
+              await tester.startGesture(tester.getCenter(find.byKey(childKey)));
           await gesture.moveBy(const Offset(200, 0));
           await tester.pumpAndSettle();
 
@@ -213,6 +294,31 @@ void main() {
           expect(tester.takeException(), isNull);
         });
       }
+
+      testWidgets(
+          'glow around stretch: the stretch follows the drag direction '
+          'through a rotation', (tester) async {
+        await tester.pumpWidget(
+          buildCombo(
+            stretchOutside: false,
+            between: (inner) =>
+                Transform.rotate(angle: math.pi / 2, child: inner),
+          ),
+        );
+
+        final gesture =
+            await tester.startGesture(tester.getCenter(find.byKey(childKey)));
+        await gesture.moveBy(const Offset(200, 0));
+        await tester.pumpAndSettle();
+
+        // A horizontal drag on screen stretches the child horizontally on
+        // screen, even though the stretch's own axes are rotated.
+        final size = childSize(tester);
+        expect(size.width, greaterThan(size.height));
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+      });
     });
   });
 }

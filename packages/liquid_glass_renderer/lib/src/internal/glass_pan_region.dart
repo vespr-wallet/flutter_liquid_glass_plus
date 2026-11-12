@@ -14,8 +14,10 @@ enum GlassPanRole {
 /// Receives pan events from a [GlassPanHub].
 @internal
 abstract interface class GlassPanListener {
-  void onHubPanStart(Offset globalPosition);
-  void onHubPanUpdate(Offset globalPosition, Offset delta);
+  /// [downPosition] is where the pointer went down, [globalPosition] is
+  /// where the pan won the gesture arena.
+  void onHubPanStart(Offset globalPosition, Offset downPosition);
+  void onHubPanUpdate(Offset globalPosition);
   void onHubPanEnd();
 }
 
@@ -29,15 +31,15 @@ class GlassPanHub {
 
   void removeListener(GlassPanListener listener) => _listeners.remove(listener);
 
-  void start(Offset globalPosition) {
+  void start(Offset globalPosition, Offset downPosition) {
     for (final listener in List.of(_listeners)) {
-      listener.onHubPanStart(globalPosition);
+      listener.onHubPanStart(globalPosition, downPosition);
     }
   }
 
-  void update(Offset globalPosition, Offset delta) {
+  void update(Offset globalPosition) {
     for (final listener in List.of(_listeners)) {
-      listener.onHubPanUpdate(globalPosition, delta);
+      listener.onHubPanUpdate(globalPosition);
     }
   }
 
@@ -114,8 +116,13 @@ class _GlassPanRegionState extends State<GlassPanRegion>
   /// The hub of an outer region of the other role that this region joined.
   GlassPanHub? _joinedHub;
 
-  /// Whether the shared pan started inside this region.
-  bool _trackingSharedPan = false;
+  /// The last local position of a shared pan that started on this region, or
+  /// null when this region is not following one.
+  Offset? _sharedPanPosition;
+
+  /// Where the pointer of this region's own pan went down, in global
+  /// coordinates.
+  Offset? _panDownPosition;
 
   @override
   void didChangeDependencies() {
@@ -126,7 +133,7 @@ class _GlassPanRegionState extends State<GlassPanRegion>
     _joinedHub?.removeListener(this);
     _joinedHub = hub;
     hub?.addListener(this);
-    _trackingSharedPan = false;
+    _sharedPanPosition = null;
   }
 
   @override
@@ -141,42 +148,53 @@ class _GlassPanRegionState extends State<GlassPanRegion>
       };
 
   @override
-  void onHubPanStart(Offset globalPosition) {
+  void onHubPanStart(Offset globalPosition, Offset downPosition) {
     if (!mounted) return;
     final box = _box;
     if (box == null) return;
+    // Only follow shared pans whose pointer went down on this region. The
+    // pan may have moved out of it before winning the arena.
+    if (!(Offset.zero & box.size).contains(box.globalToLocal(downPosition))) {
+      return;
+    }
     final local = box.globalToLocal(globalPosition);
-    // Only follow shared pans that start on this region.
-    if (!(Offset.zero & box.size).contains(local)) return;
-    _trackingSharedPan = true;
+    _sharedPanPosition = local;
     widget.onStart(local);
   }
 
   @override
-  void onHubPanUpdate(Offset globalPosition, Offset delta) {
-    if (!mounted || !_trackingSharedPan) return;
+  void onHubPanUpdate(Offset globalPosition) {
+    final last = _sharedPanPosition;
+    if (!mounted || last == null) return;
     final box = _box;
     if (box == null) return;
-    widget.onUpdate(box.globalToLocal(globalPosition), delta);
+    // The outer region's delta is in its own coordinates. Derive the delta
+    // in this region's coordinates, so transforms in between are respected.
+    final local = box.globalToLocal(globalPosition);
+    _sharedPanPosition = local;
+    widget.onUpdate(local, local - last);
   }
 
   @override
   void onHubPanEnd() {
-    if (!mounted || !_trackingSharedPan) return;
-    _trackingSharedPan = false;
+    if (!mounted || _sharedPanPosition == null) return;
+    _sharedPanPosition = null;
     widget.onEnd();
   }
 
   void _handleStart(DragStartDetails details) {
     if (!mounted) return;
     widget.onStart(details.localPosition);
-    _ownHub.start(details.globalPosition);
+    _ownHub.start(
+      details.globalPosition,
+      _panDownPosition ?? details.globalPosition,
+    );
   }
 
   void _handleUpdate(DragUpdateDetails details) {
     if (!mounted) return;
     widget.onUpdate(details.localPosition, details.delta);
-    _ownHub.update(details.globalPosition, details.delta);
+    _ownHub.update(details.globalPosition);
   }
 
   void _handleEnd() {
@@ -199,6 +217,7 @@ class _GlassPanRegionState extends State<GlassPanRegion>
 
     return GestureDetector(
       behavior: widget.behavior,
+      onPanDown: (details) => _panDownPosition = details.globalPosition,
       onPanStart: _handleStart,
       onPanUpdate: _handleUpdate,
       onPanEnd: (details) => _handleEnd(),
