@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
+import 'package:liquid_glass_plus/src/internal/lerp.dart';
 import 'package:meta/meta.dart';
 
 // =============================================================================
@@ -158,7 +159,7 @@ mixin FakeGlassEffectsMixin {
     final y = math.sin(rad);
 
     // How far the light covers the glass, used to adjust the gradient stops
-    final lightCoverage = ui.lerpDouble(.3, .5, lightIntensity)!;
+    final lightCoverage = lerpDoubleNonNull(0.3, 0.5, lightIntensity);
 
     // How perpendicular we are to the shortest side of the box, 1 means the
     // light is hitting the shortest side directly, 0 means it's hitting the
@@ -174,11 +175,11 @@ mixin FakeGlassEffectsMixin {
     final gradientScale = aspectAdjustment * (1 - alignmentWithShortestSide);
 
     // How far the outer stops are inset
-    final inset = ui.lerpDouble(0, .5, gradientScale.clamp(0, 1))!;
+    final inset = lerpDoubleNonNull(0.0, 0.5, gradientScale.clamp(0.0, 1.0));
 
     // How far the second stops are inset
     final secondInset =
-        ui.lerpDouble(lightCoverage, .5, gradientScale.clamp(0, 1))!;
+        lerpDoubleNonNull(lightCoverage, .5, gradientScale.clamp(0.0, 1.0));
 
     final shader = LinearGradient(
       colors: [
@@ -200,8 +201,8 @@ mixin FakeGlassEffectsMixin {
     final paint = Paint()
       ..shader = shader
       ..style = PaintingStyle.stroke
-      ..strokeWidth = ui.lerpDouble(kFakeGlassSpecularStrokeMin,
-          kFakeGlassSpecularStrokeMax, lightIntensity)!
+      ..strokeWidth = lerpDoubleNonNull(kFakeGlassSpecularStrokeMin,
+          kFakeGlassSpecularStrokeMax, lightIntensity)
       ..color = color.withValues(alpha: color.a * kFakeGlassSpecularAlpha)
       ..blendMode = BlendMode.hardLight;
     canvas.drawPath(path, paint);
@@ -302,7 +303,7 @@ mixin FakeGlassEffectsMixin {
     // Use 90% for nearly grayscale colors, 75% for more colorful colors.
     final lerpFactor = hsl.saturation < 0.05 ? 0.9 : 0.75;
 
-    final brighterLightness = ui.lerpDouble(hsl.lightness, 1.0, lerpFactor)!;
+    final brighterLightness = lerpDoubleNonNull(hsl.lightness, 1.0, lerpFactor);
     return hsl.withLightness(brighterLightness.clamp(0.0, 1.0)).toColor();
   }
 

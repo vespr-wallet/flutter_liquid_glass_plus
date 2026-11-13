@@ -16,12 +16,13 @@ class LiquidGlassRenderScope extends InheritedWidget {
   static LiquidGlassRenderScope of(BuildContext context) {
     final scope =
         context.dependOnInheritedWidgetOfExactType<LiquidGlassRenderScope>();
-    assert(
-      scope != null,
-      'No liquid glass renderer found in context. '
-      'Make sure to wrap your liquid glass widgets in a LiquidGlassLayer.',
-    );
-    return scope!;
+    if (scope == null) {
+      throw FlutterError(
+        'No liquid glass renderer found in context.\n'
+        'Make sure to wrap your liquid glass widgets in a LiquidGlassLayer.',
+      );
+    }
+    return scope;
   }
 
   @override

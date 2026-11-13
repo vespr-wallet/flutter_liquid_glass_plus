@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
+import 'package:liquid_glass_plus/src/internal/lerp.dart';
 import 'package:liquid_glass_plus/src/liquid_glass_render_scope.dart';
 
 /// Configuration specific to Impeller/shader-based liquid glass rendering.
@@ -54,8 +55,9 @@ class LiquidGlassConfigs with Equatable {
   ) {
     return LiquidGlassConfigs(
       chromaticAberration:
-          ui.lerpDouble(a.chromaticAberration, b.chromaticAberration, t)!,
-      refractiveIndex: ui.lerpDouble(a.refractiveIndex, b.refractiveIndex, t)!,
+          lerpDoubleNonNull(a.chromaticAberration, b.chromaticAberration, t),
+      refractiveIndex:
+          lerpDoubleNonNull(a.refractiveIndex, b.refractiveIndex, t),
     );
   }
 
@@ -129,7 +131,7 @@ class FakeGlassConfigs with Equatable {
   ) {
     return FakeGlassConfigs(
       forceEnabled: t < 0.5 ? a.forceEnabled : b.forceEnabled,
-      refraction: ui.lerpDouble(a.refraction, b.refraction, t)!,
+      refraction: lerpDoubleNonNull(a.refraction, b.refraction, t),
     );
   }
 
@@ -433,13 +435,14 @@ class LiquidGlassSettings with Equatable {
     double t,
   ) {
     return LiquidGlassSettings(
-      glassColor: Color.lerp(a.glassColor, b.glassColor, t)!,
-      thickness: ui.lerpDouble(a.thickness, b.thickness, t)!,
-      frostIntensity: ui.lerpDouble(a.frostIntensity, b.frostIntensity, t)!,
-      lightAngle: ui.lerpDouble(a.lightAngle, b.lightAngle, t)!,
-      lightIntensity: ui.lerpDouble(a.lightIntensity, b.lightIntensity, t)!,
-      ambientStrength: ui.lerpDouble(a.ambientStrength, b.ambientStrength, t)!,
-      saturation: ui.lerpDouble(a.saturation, b.saturation, t)!,
+      glassColor: lerpColorNonNull(a.glassColor, b.glassColor, t),
+      thickness: lerpDoubleNonNull(a.thickness, b.thickness, t),
+      frostIntensity: lerpDoubleNonNull(a.frostIntensity, b.frostIntensity, t),
+      lightAngle: lerpDoubleNonNull(a.lightAngle, b.lightAngle, t),
+      lightIntensity: lerpDoubleNonNull(a.lightIntensity, b.lightIntensity, t),
+      ambientStrength:
+          lerpDoubleNonNull(a.ambientStrength, b.ambientStrength, t),
+      saturation: lerpDoubleNonNull(a.saturation, b.saturation, t),
       liquidGlassConfigs: LiquidGlassConfigs.lerp(
         a.liquidGlassConfigs,
         b.liquidGlassConfigs,

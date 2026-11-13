@@ -145,9 +145,9 @@ class _MultiShaderBuilderState extends State<MultiShaderBuilder> {
     // Check which shaders are already cached
     final uncachedKeys = <String>[];
     for (final assetKey in assetKeys) {
-      if (_shaderCache.containsKey(assetKey)) {
-        _programs[assetKey] = _shaderCache[assetKey]!;
-        _shaders[assetKey] = _programs[assetKey]!.fragmentShader();
+      if (_shaderCache[assetKey] case final program?) {
+        _programs[assetKey] = program;
+        _shaders[assetKey] = program.fragmentShader();
       } else {
         uncachedKeys.add(assetKey);
       }
@@ -182,13 +182,14 @@ class _MultiShaderBuilderState extends State<MultiShaderBuilder> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if all shaders are loaded
-    if (_shaders.length != widget.assetKeys.length) {
-      return widget.child ?? const SizedBox.shrink();
+    // Build the shader list in the same order as assetKeys, showing only the
+    // child until all of them are loaded.
+    final shaders = <ui.FragmentShader>[];
+    for (final key in widget.assetKeys) {
+      final shader = _shaders[key];
+      if (shader == null) return widget.child ?? const SizedBox.shrink();
+      shaders.add(shader);
     }
-
-    // Build shader list in the same order as assetKeys
-    final shaders = widget.assetKeys.map((key) => _shaders[key]!).toList();
 
     return widget.builder(context, shaders, widget.child);
   }

@@ -128,24 +128,30 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
   }
 
   void _startAnimation(Duration duration, Curve curve) {
-    _controller ??= AnimationController(vsync: this)
+    final controller = _controller ??= AnimationController(vsync: this)
       ..addListener(_onAnimationTick)
       ..addStatusListener(_onAnimationStatus);
 
-    if (_controller!.duration != duration) {
-      _controller!.duration = duration;
+    if (controller.duration != duration) {
+      controller.duration = duration;
     }
 
     _curvedAnimation?.dispose();
-    _curvedAnimation = CurvedAnimation(parent: _controller!, curve: curve);
+    _curvedAnimation = CurvedAnimation(parent: controller, curve: curve);
 
-    _controller!.forward(from: 0);
+    controller.forward(from: 0);
   }
 
   void _onAnimationTick() {
-    final t = _curvedAnimation?.value ?? _controller!.value;
-    _animatedSettings =
-        LiquidGlassSettings.lerp(_fromSettings!, widget.settings, t);
+    // Both are set by didUpdateWidget before the animation starts.
+    final curvedAnimation = _curvedAnimation;
+    final fromSettings = _fromSettings;
+    if (curvedAnimation == null || fromSettings == null) return;
+    _animatedSettings = LiquidGlassSettings.lerp(
+      fromSettings,
+      widget.settings,
+      curvedAnimation.value,
+    );
     setState(() {});
   }
 
@@ -211,14 +217,16 @@ class _LiquidGlassLayerState extends State<LiquidGlassLayer>
           link: _link,
           child: ShaderBuilder(
             assetKey: ShaderKeys.liquidGlassRender,
-            (context, shader, child) => _RawShapes(
+            // widget.child is passed through ShaderBuilder unchanged, so use
+            // it directly instead of the builder's nullable child.
+            (context, shader, _) => _RawShapes(
               renderShader: shader,
               backdropKey: widget.useBackdropGroup
                   ? BackdropGroup.of(context)?.backdropKey
                   : null,
               settings: settings,
               link: _link,
-              child: child!,
+              child: widget.child,
             ),
             child: widget.child,
           ),
@@ -301,13 +309,14 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   double? _cachedSaturationValue;
   List<double>? _cachedSaturationMatrix;
   List<double> _getSaturationMatrix(double saturation) {
-    if (_cachedSaturationMatrix != null &&
-        _cachedSaturationValue == saturation) {
-      return _cachedSaturationMatrix!;
+    final cached = _cachedSaturationMatrix;
+    if (cached != null && _cachedSaturationValue == saturation) {
+      return cached;
     }
+    final matrix = createSaturationMatrix(saturation);
     _cachedSaturationValue = saturation;
-    _cachedSaturationMatrix = createSaturationMatrix(saturation);
-    return _cachedSaturationMatrix!;
+    _cachedSaturationMatrix = matrix;
+    return matrix;
   }
 
   /// Saturation boosted to match the real glass shader appearance.
@@ -395,6 +404,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
   void paintLiquidGlass(
     PaintingContext context,
     Offset offset,
+    FragmentShader renderShader,
     List<(RenderLiquidGlassGeometry, GeometryCache, Matrix4)> shapes,
     Rect boundingBox,
   ) {
@@ -409,7 +419,7 @@ class RenderLiquidGlassLayer extends LiquidGlassRenderObject
     }
 
     final shaderLayer = (_shaderHandle.layer ??= BackdropFilterLayer())
-      ..filter = ImageFilter.shader(renderShader!);
+      ..filter = ImageFilter.shader(renderShader);
 
     // Build clip path from all shapes
     final clipPath = Path();

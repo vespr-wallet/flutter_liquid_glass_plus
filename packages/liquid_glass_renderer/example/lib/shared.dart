@@ -132,8 +132,8 @@ class SettingsSheet extends HookWidget {
           ),
           shape: LiquidRoundedSuperellipse(borderRadius: 32),
           child: GlassGlow(
-            child: DefaultTextStyle(
-              style: Theme.of(context).textTheme.bodyLarge!,
+            child: DefaultTextStyle.merge(
+              style: Theme.of(context).textTheme.bodyLarge,
               child: Align(
                 alignment: Alignment.topCenter,
                 child: SingleChildScrollView(
