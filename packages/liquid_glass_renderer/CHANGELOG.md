@@ -1,3 +1,7 @@
+## Unreleased
+
+- **FIX**: `LiquidGlass` shadows are only painted outside the glass shape, like CSS `box-shadow` on a translucent box. They are clipped out where the glass is, whatever their `BlurStyle`, offset or spread, so the glass is never darkened. Before, every blur style except `BlurStyle.outer` (and any offset shadow) also painted inside the shape, over the glass.
+
 ## 0.4.0
 
 - **FEAT**: new `shadows` parameter on `LiquidGlass` and `LiquidGlass.withOwnLayer` (default: none). Shadows are drawn with the canvas primitive that matches the shape (`drawRSuperellipse`, `drawRRect`, `drawOval`) instead of a blurred path (upstream [9599204](https://github.com/whynotmake-it/flutter_liquid_glass/commit/9599204)). They include upstream's later fixes: superellipse shapes get a superellipse shadow, and spread and offset are applied (upstream [77a373c](https://github.com/whynotmake-it/flutter_liquid_glass/commit/77a373c)). Upstream's `FakeGlass` widget and its shadow visibility scaling have no counterpart in this fork, which renders fake glass through `LiquidGlassSettings`.
