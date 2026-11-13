@@ -2,7 +2,7 @@ name: liquid_glass_plus
 description: >-
   Create stunning liquid glass and frosted glass effects in Flutter using
   custom shaders. Supports iOS, macOS, and Android with Impeller rendering.
-version: 0.4.0
+version: 0.4.1
 
 homepage: https://vespr.xyz
 repository: https://github.com/vespr-wallet/flutter_liquid_glass_plus/tree/main/packages/liquid_glass_renderer
