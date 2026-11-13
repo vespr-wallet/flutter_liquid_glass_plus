@@ -108,7 +108,7 @@ Golden tests verify visual output and are tagged with `golden` in `dart_test.yam
 - On pushes to main
 - On PRs labeled with "goldens"
 
-The Linux CI job runs `melos run test-without-goldens`. Every `goldenTest` must pass `skip: skipPlatformGoldens` (from `test/src/shared.dart`): off macOS alchemist has no variant to run, and the whole test file would fail to load. Failure diffs land in `test/src/failures/` (gitignored).
+The Linux CI job runs `melos run test-without-goldens`. Every `goldenTest` must pass `skip: skipPlatformGoldens` (from `test/src/shared.dart`): off macOS alchemist has no variant to run, and the whole test file would fail to load. Failure diffs land in `test/src/failures/` (gitignored). Comparisons accept up to 0.05% differing pixels (`test/flutter_test_config.dart`), because GitHub's macOS runners differ from a local Mac by up to 0.02%.
 
 All tests must use the `--enable-impeller` flag for consistent golden test results (Skia uses an approximation that produces different visuals).
 
