@@ -24,8 +24,11 @@ jobs:
     name: Run Golden Tests (macOS)
     # On main, and on every event of a PR labeled "goldens". Any label event
     # on such a PR reruns the goldens rather than skipping them, so a skipped
-    # run can never replace a failed one for the same commit.
-    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'goldens')
+    # run can never replace a failed one for the same commit. Closed PRs are
+    # skipped: bots still add labels after a merge.
+    if: >-
+      github.event_name == 'push'
+      || github.event.pull_request.state == 'open' && contains(github.event.pull_request.labels.*.name, 'goldens')
     runs-on: macos-15
     timeout-minutes: 20
     steps:
