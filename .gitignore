@@ -30,3 +30,5 @@ pubspec_overrides.yaml
 
 # FVM Version Cache
 .fvm/
+# Coverage output (`melos run coverage`)
+coverage/

@@ -1,8 +1,6 @@
 # Liquid Glass Plus
 
-<!-- [![Code Coverage](./coverage.svg)](./test/) -->
 [![Pub Version](https://img.shields.io/pub/v/liquid_glass_plus)](https://pub.dev/packages/liquid_glass_plus)
-[![Code Coverage](./coverage.svg)](./test/)
 [![lints by lintervention][lintervention_badge]][lintervention_link]
 
 

@@ -1,20 +1,25 @@
 name: Performance Benchmarks
 
+# On demand only: run it from the Actions tab, or add the "benchmark" label to
+# a PR (it then runs on every later push and label event while the label is
+# there, like goldens.yaml). Its own group per PR means a label event never
+# cancels the CI checks; within this workflow the newest run replaces the
+# older one.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'packages/liquid_glass_renderer/**'
+    types: [opened, synchronize, reopened, labeled]
 
 jobs:
   benchmark:
     name: Run Performance Benchmarks
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'benchmark')
     runs-on: macos-15
     timeout-minutes: 30
     permissions:
@@ -49,9 +54,10 @@ jobs:
         id: parse-results
         working-directory: packages/liquid_glass_renderer/example
         run: |
-          dart tool/parse_benchmark_results.dart >> $GITHUB_OUTPUT
+          dart tool/parse_benchmark_results.dart >> "$GITHUB_OUTPUT"
 
       - name: 📝 Find existing comment
+        if: github.event_name == 'pull_request'
         uses: peter-evans/find-comment@v4
         id: find-comment
         with:
@@ -60,6 +66,7 @@ jobs:
           body-includes: 'Performance Benchmark Results'
 
       - name: 💬 Create or update PR comment
+        if: github.event_name == 'pull_request'
         uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
@@ -71,6 +78,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: benchmark-results-${{ github.event.pull_request.number }}
+          name: benchmark-results-${{ github.event.pull_request.number || github.run_id }}
           path: packages/liquid_glass_renderer/example/build/*.timeline*.json
           retention-days: 30
