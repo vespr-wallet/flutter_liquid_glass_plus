@@ -104,7 +104,7 @@ The package aggressively caches geometry in textures to minimize GPU work. Howev
 ## Testing
 
 ### Golden Tests
-Golden tests verify visual output and are tagged with `golden` in `dart_test.yaml`. The goldens are macOS platform goldens (`test/flutter_test_config.dart`), so they can't be compared on Linux. In CI (`.github/workflows/main.yaml`) they run on a macOS-15 runner only:
+Golden tests verify visual output and are tagged with `golden` in `dart_test.yaml`. The goldens are macOS platform goldens (`test/flutter_test_config.dart`), so they can't be compared on Linux. In CI (`.github/workflows/goldens.yaml`) they run on a macOS-15 runner only:
 - On pushes to main
 - On PRs labeled with "goldens"
 
@@ -119,7 +119,8 @@ All tests must use the `--enable-impeller` flag for consistent golden test resul
 
 ## CI/CD Workflows
 
-- **main.yaml**: PR title check, format check, `analyze --fatal-infos`, tests without goldens (Linux), golden tests (macOS, main and `goldens`-labeled PRs)
+- **main.yaml**: PR title check, format check, `analyze --fatal-infos`, tests without goldens (Linux)
+- **goldens.yaml**: golden tests (macOS), on main and on PRs labeled `goldens`
 - **benchmark.yaml**: Performance benchmarking
 
 ## Debugging

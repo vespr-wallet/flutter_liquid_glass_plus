@@ -1,16 +1,11 @@
 name: CI
 
 # One group per PR (or branch), so a new push cancels the PR's older run.
-# Label events get their own group: the `goldens` label only starts the golden
-# tests, and any other label (review bots add several, even after a merge)
-# starts a run with every job skipped. Neither may cancel a running check run.
 # Pushes to main are never cancelled, so every main commit gets a full run.
+# No `labeled` trigger: a label-only run would replace this commit's checks
+# (golden tests live in goldens.yaml for that reason).
 concurrency:
-  group: >-
-    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{
-    github.event.action != 'labeled' && 'checks'
-    || github.event.label.name == 'goldens' && 'goldens'
-    || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 on:
@@ -20,7 +15,6 @@ on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened, labeled]
 
 permissions:
   contents: read
@@ -29,12 +23,11 @@ permissions:
 jobs:
   semantic_pull_request:
     name: Check PR Title
-    if: github.event_name == 'pull_request' && github.event.action != 'labeled'
+    if: github.event_name == 'pull_request'
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@v1
 
   flutter-check:
     name: Format, Analyze, Test
-    if: github.event.action != 'labeled'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -61,43 +54,6 @@ jobs:
 
       # Golden tests are excluded here: the goldens are macOS platform goldens
       # (see packages/liquid_glass_renderer/test/flutter_test_config.dart), so
-      # they can't be compared on Linux. They run in `golden_tests` on macOS.
+      # they can't be compared on Linux. They run on macOS in goldens.yaml.
       - name: 📝 Run Tests without goldens
         run: melos run test-without-goldens
-
-  golden_tests:
-    name: Run Golden Tests (macOS)
-    # Only on main, or on PRs labeled "goldens": when the label is added, and
-    # on every later push while it is there.
-    if: >-
-      github.event_name == 'push'
-      || github.event.action == 'labeled' && github.event.label.name == 'goldens'
-      || github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'goldens')
-    runs-on: macos-15
-    timeout-minutes: 20
-    steps:
-      - name: 📚 Checkout
-        uses: actions/checkout@v7
-
-      - name: 🐦 Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          # Keep in sync with .tool-versions and .fvmrc.
-          flutter-version: 3.50.0
-          cache: true
-
-      - name: Ⓜ️ Set up Melos
-        uses: bluefireteam/melos-action@v3
-
-      - name: 📝 Run Golden Tests
-        working-directory: packages/liquid_glass_renderer
-        run: flutter test --enable-impeller --tags=golden
-
-      - name: 📤 Upload golden failures
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: golden-failures
-          path: packages/liquid_glass_renderer/test/src/failures/
-          retention-days: 7
