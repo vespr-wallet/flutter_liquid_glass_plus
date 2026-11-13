@@ -121,7 +121,7 @@ All tests must use the `--enable-impeller` flag for consistent golden test resul
 
 - **main.yaml**: PR title check, format check, `analyze --fatal-infos`, tests without goldens (Linux)
 - **goldens.yaml**: golden tests (macOS), on main and on PRs labeled `goldens`
-- **benchmark.yaml**: Performance benchmarking
+- **benchmark.yaml**: performance benchmarks (macOS), on demand only: run it from the Actions tab (`workflow_dispatch`) or add the `benchmark` label to a PR
 
 ## Debugging
 
