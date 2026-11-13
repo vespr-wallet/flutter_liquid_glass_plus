@@ -109,11 +109,9 @@ class LiquidGlass extends StatefulWidget {
   /// (`drawRSuperellipse`, `drawRRect`, `drawOval`) instead of blurring an
   /// arbitrary path, so they stay cheap.
   ///
-  /// Use [BlurStyle.outer] without an offset for the most natural result: the
-  /// shadow stays evenly around the edge and is never drawn over the glass
-  /// itself. Other blur styles also paint inside the shape, on top of the
-  /// glass, because the glass is rendered by the [LiquidGlassLayer] before its
-  /// children.
+  /// Like CSS `box-shadow` on a translucent box, shadows are only painted
+  /// outside the shape: they are clipped out where the glass is, whatever
+  /// their [BlurStyle], offset or spread, so the glass is never darkened.
   ///
   /// Defaults to no shadows.
   final List<BoxShadow> shadows;

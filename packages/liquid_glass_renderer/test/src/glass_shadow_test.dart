@@ -4,6 +4,7 @@
 
 import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
 import 'package:liquid_glass_plus/src/glass_shadow.dart';
@@ -284,6 +285,108 @@ void main() {
       );
     });
 
+    group('clips the shadows out of the shape', () {
+      const shapes = [
+        (
+          'LiquidRoundedSuperellipse',
+          LiquidRoundedSuperellipse(borderRadius: 50)
+        ),
+        ('LiquidRoundedRectangle', LiquidRoundedRectangle(borderRadius: 50)),
+        ('LiquidOval', LiquidOval()),
+      ];
+
+      for (final (name, shape) in shapes) {
+        testWidgets('$name: clips the shape out before painting shadows',
+            (tester) async {
+          await tester.pumpWidget(_app(_glass(shape)));
+          final box = tester.renderObject<RenderBox>(find.byType(GlassShadow));
+          // `paints` paints at Offset.zero. The glass is 200x200, and the
+          // shadow reaches ~40px out.
+          expect(
+            box,
+            paints
+              ..clipPath(
+                pathMatcher: isPathThat(
+                  includes: [
+                    const Offset(-10, 100),
+                    const Offset(100, 230),
+                  ],
+                  excludes: [
+                    const Offset(100, 100),
+                    const Offset(100, 3),
+                    const Offset(197, 100),
+                  ],
+                ),
+              ),
+          );
+        });
+
+        testWidgets(
+            '$name: leaves the inside of the shape untouched, whatever the '
+            'blur style', (tester) async {
+          const background = Color(0xFFFFFFFF);
+          final key = GlobalKey();
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Center(
+                child: RepaintBoundary(
+                  key: key,
+                  child: ColoredBox(
+                    color: background,
+                    child: Padding(
+                      padding: const EdgeInsets.all(50),
+                      child: GlassShadow(
+                        shape: shape,
+                        shadows: const [
+                          BoxShadow(
+                            color: Color(0xFF000000),
+                            blurRadius: 20,
+                            spreadRadius: 4,
+                          ),
+                          BoxShadow(
+                            color: Color(0xFF000000),
+                            offset: Offset(10, 10),
+                            blurStyle: BlurStyle.solid,
+                            blurRadius: 10,
+                          ),
+                          BoxShadow(
+                            color: Color(0xFF000000),
+                            offset: Offset(-6, 0),
+                            blurStyle: BlurStyle.inner,
+                            blurRadius: 10,
+                          ),
+                        ],
+                        child: const SizedBox.square(dimension: 200),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          final pixels = await _capture(tester, key);
+          // Offsets from the shape's top left, which is at (50, 50).
+          Color at(double x, double y) => pixels(Offset(50 + x, 50 + y));
+
+          // Inside the shape, including close to its edges: untouched.
+          for (final point in const [
+            Offset(100, 100),
+            Offset(100, 3),
+            Offset(3, 100),
+            Offset(197, 100),
+            Offset(100, 197),
+          ]) {
+            expect(at(point.dx, point.dy), background, reason: '$point');
+          }
+          // Just outside the shape: shadowed.
+          expect(at(100, 205), isNot(background));
+          expect(at(205, 100), isNot(background));
+        });
+      }
+    });
+
     testWidgets('paints nothing without shadows', (tester) async {
       await tester.pumpWidget(
         _app(
@@ -333,7 +436,81 @@ void main() {
         ],
       ),
     );
+
+    goldenTest(
+      'paints shadows only outside the glass, whatever the blur style',
+      skip: skipPlatformGoldens,
+      fileName: 'glass_shadows_outside_only',
+      pumpBeforeTest: pumpOnce,
+      builder: () => GoldenTestGroup(
+        scenarioConstraints: testScenarioConstraints,
+        children: [
+          for (final (name, style, offset) in const [
+            ('normal, offset', BlurStyle.normal, Offset(16, 24)),
+            ('solid, offset', BlurStyle.solid, Offset(16, 24)),
+            ('inner, offset', BlurStyle.inner, Offset(16, 24)),
+          ])
+            for (final fake in [false, true])
+              GoldenTestScenario(
+                name: fake ? '$name, fake glass' : name,
+                child: buildWithGridPaper(
+                  _glass(
+                    const LiquidRoundedSuperellipse(borderRadius: 50),
+                    shadows: [
+                      BoxShadow(
+                        blurStyle: style,
+                        color: const Color(0xA0000000),
+                        offset: offset,
+                        blurRadius: 24,
+                        spreadRadius: 6,
+                      ),
+                    ],
+                    settings: fake
+                        ? settingsWithoutLighting.copyWith(
+                            fakeGlassConfigs: const FakeGlassConfigs(
+                              forceEnabled: true,
+                            ),
+                          )
+                        : settingsWithoutLighting,
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
   });
+}
+
+/// Renders the [RepaintBoundary] with [key] and returns a pixel lookup in its
+/// logical coordinates (the test device pixel ratio is applied).
+Future<Color Function(Offset)> _capture(
+  WidgetTester tester,
+  GlobalKey key,
+) async {
+  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(key));
+  final captured = await tester.runAsync(() async {
+    final image = await boundary.toImage();
+    final data = await image.toByteData();
+    final width = image.width;
+    image.dispose();
+    return (width: width, data: data);
+  });
+  if (captured == null) throw StateError('Capturing the boundary timed out');
+  final (:width, :data) = captured;
+  if (data == null) throw StateError('The boundary image has no pixel data');
+
+  final scale = width / boundary.size.width;
+  return (Offset offset) {
+    final x = (offset.dx * scale).floor();
+    final y = (offset.dy * scale).floor();
+    final i = (y * width + x) * 4;
+    return Color.fromARGB(
+      data.getUint8(i + 3),
+      data.getUint8(i),
+      data.getUint8(i + 1),
+      data.getUint8(i + 2),
+    );
+  };
 }
 
 class _Stateful extends StatefulWidget {
