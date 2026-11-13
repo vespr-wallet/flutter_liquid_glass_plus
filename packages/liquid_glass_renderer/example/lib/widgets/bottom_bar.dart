@@ -147,8 +147,8 @@ class _LiquidGlassBottomBarState extends State<LiquidGlassBottomBar> {
                 ),
               ),
             ),
-            if (widget.extraButton != null)
-              _ExtraButton(config: widget.extraButton!),
+            if (widget.extraButton case final extraButton?)
+              _ExtraButton(config: extraButton),
           ],
         ),
       ),
@@ -219,7 +219,7 @@ class _BottomBarTab extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    if (tab.glowColor != null)
+                    if (tab.glowColor case final glowColor?)
                       Positioned(
                         top: -24,
                         right: -24,
@@ -242,7 +242,7 @@ class _BottomBarTab extends StatelessWidget {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: tab.glowColor!.withOpacity(
+                                    color: glowColor.withOpacity(
                                       selected ? 0.6 : 0,
                                     ),
                                     blurRadius: 32,
@@ -379,7 +379,8 @@ class _TabIndicatorState extends State<_TabIndicator>
   }
 
   double _getAlignmentFromGlobalPostition(Offset globalPosition) {
-    final box = context.findRenderObject() as RenderBox;
+    final box = context.findRenderObject();
+    if (box is! RenderBox) return xAlign;
     final localPosition = box.globalToLocal(globalPosition);
 
     // Calculate the effective draggable range
@@ -440,7 +441,8 @@ class _TabIndicatorState extends State<_TabIndicator>
       _isDown = false;
     });
 
-    final box = context.findRenderObject() as RenderBox;
+    final box = context.findRenderObject();
+    if (box is! RenderBox) return;
     final currentRelativeX = (xAlign + 1) / 2; // Convert from -1:1 to 0:1
     final tabWidth = 1.0 / widget.tabCount;
 
@@ -560,7 +562,7 @@ class _TabIndicatorState extends State<_TabIndicator>
                         ),
                       ),
                     ),
-                  child!,
+                  widget.child,
                   if (thickness > 0)
                     _IndicatorTransform(
                       velocity: velocity,
@@ -627,11 +629,8 @@ class _IndicatorTransform extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rect = RelativeRect.lerp(
-      RelativeRect.fill,
-      const RelativeRect.fromLTRB(-14, -14, -14, -14),
-      thickness,
-    );
+    final inset = -14 * thickness;
+    final rect = RelativeRect.fromLTRB(inset, inset, inset, inset);
     return Positioned.fill(
       left: 4,
       right: 4,
@@ -644,13 +643,13 @@ class _IndicatorTransform extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             Positioned.fromRelativeRect(
-              rect: rect!,
+              rect: rect,
               child: SingleMotionBuilder(
                 motion: Motion.bouncySpring(
                   duration: const Duration(milliseconds: 600),
                 ),
                 value: velocity,
-                builder: (context, velocity, child) {
+                builder: (context, velocity, _) {
                   return LiquidTransform(
                     alignment: Alignment.center,
                     transform: buildJellyTransform(
@@ -658,10 +657,9 @@ class _IndicatorTransform extends StatelessWidget {
                       maxDistortion: .8,
                       velocityScale: 10,
                     ),
-                    child: child!,
+                    child: child,
                   );
                 },
-                child: child,
               ),
             ),
           ],

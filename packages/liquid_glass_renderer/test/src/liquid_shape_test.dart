@@ -45,9 +45,7 @@ void main() {
 
     test('scale multiplies borderRadius', () {
       const shape = LiquidRoundedSuperellipse(borderRadius: 16);
-      final scaled = shape.scale(2) as LiquidRoundedSuperellipse;
-
-      expect(scaled.borderRadius, 32);
+      expect(shape.scale(2), const LiquidRoundedSuperellipse(borderRadius: 32));
     });
 
     test('equality works correctly', () {
@@ -81,9 +79,7 @@ void main() {
 
     test('scale multiplies borderRadius', () {
       const shape = LiquidRoundedRectangle(borderRadius: 16);
-      final scaled = shape.scale(2) as LiquidRoundedRectangle;
-
-      expect(scaled.borderRadius, 32);
+      expect(shape.scale(2), const LiquidRoundedRectangle(borderRadius: 32));
     });
 
     test('equality works correctly', () {
@@ -147,18 +143,20 @@ void main() {
       const a = LiquidRoundedSuperellipse(borderRadius: 10);
       const b = LiquidRoundedSuperellipse(borderRadius: 20);
 
-      final result = LiquidShape.lerp(a, b, 0.5)! as LiquidRoundedSuperellipse;
-
-      expect(result.borderRadius, 15);
+      expect(
+        LiquidShape.lerp(a, b, 0.5),
+        const LiquidRoundedSuperellipse(borderRadius: 15),
+      );
     });
 
     test('interpolates same-type LiquidRoundedRectangle', () {
       const a = LiquidRoundedRectangle(borderRadius: 10);
       const b = LiquidRoundedRectangle(borderRadius: 20);
 
-      final result = LiquidShape.lerp(a, b, 0.5)! as LiquidRoundedRectangle;
-
-      expect(result.borderRadius, 15);
+      expect(
+        LiquidShape.lerp(a, b, 0.5),
+        const LiquidRoundedRectangle(borderRadius: 15),
+      );
     });
 
     test('returns first shape for t < 0.5 with different types', () {

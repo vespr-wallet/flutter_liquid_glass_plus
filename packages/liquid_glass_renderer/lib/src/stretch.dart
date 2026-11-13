@@ -261,7 +261,10 @@ class RenderRawLiquidStretch extends RenderProxyBox {
       offset,
       transform,
       super.paint,
-      oldLayer: layer is TransformLayer ? layer as TransformLayer? : null,
+      oldLayer: switch (layer) {
+        final TransformLayer layer => layer,
+        _ => null,
+      },
     );
   }
 
