@@ -1,8 +1,12 @@
 name: CI
 
+# One group per PR (or branch), so a new push cancels the PR's older run.
+# Pushes to main are never cancelled, so every main commit gets a full run.
+# No `labeled` trigger: a label-only run would replace this commit's checks
+# (golden tests live in goldens.yaml for that reason).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 on:
   push:
@@ -11,7 +15,6 @@ on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened, labeled]
 
 permissions:
   contents: read
@@ -51,39 +54,6 @@ jobs:
 
       # Golden tests are excluded here: the goldens are macOS platform goldens
       # (see packages/liquid_glass_renderer/test/flutter_test_config.dart), so
-      # they can't be compared on Linux. They run in `golden_tests` on macOS.
+      # they can't be compared on Linux. They run on macOS in goldens.yaml.
       - name: 📝 Run Tests without goldens
         run: melos run test-without-goldens
-
-  golden_tests:
-    name: Run Golden Tests (macOS)
-    # Only on main, or on PRs labeled "goldens".
-    if: github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'goldens')
-    runs-on: macos-15
-    timeout-minutes: 20
-    steps:
-      - name: 📚 Checkout
-        uses: actions/checkout@v7
-
-      - name: 🐦 Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          # Keep in sync with .tool-versions and .fvmrc.
-          flutter-version: 3.50.0
-          cache: true
-
-      - name: Ⓜ️ Set up Melos
-        uses: bluefireteam/melos-action@v3
-
-      - name: 📝 Run Golden Tests
-        working-directory: packages/liquid_glass_renderer
-        run: flutter test --enable-impeller --tags=golden
-
-      - name: 📤 Upload golden failures
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: golden-failures
-          path: packages/liquid_glass_renderer/test/src/failures/
-          retention-days: 7
