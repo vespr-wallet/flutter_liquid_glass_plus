@@ -59,6 +59,8 @@ PR that bumps the version; after it merges, `main` is tagged with an annotated
 `vX.Y.Z` tag and a GitHub Release is created whose notes are that CHANGELOG
 section. Tags are created by hand; don't use `melos version`, which creates
 melos-style tags.
+Title the release PR `chore: release liquid_glass_plus X.Y.Z`: the PR title
+check only accepts conventional commit types, so `release:` fails it.
 
 ### Running the Example App
 ```bash
