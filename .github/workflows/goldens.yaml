@@ -1,0 +1,56 @@
+name: Goldens
+
+# Separate from CI because it also runs on `labeled`: adding the "goldens"
+# label starts it. Its own group per PR means a label event never cancels the
+# CI checks; within this workflow the newest run replaces the older one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  golden_tests:
+    name: Run Golden Tests (macOS)
+    # On main, and on every event of a PR labeled "goldens". Any label event
+    # on such a PR reruns the goldens rather than skipping them, so a skipped
+    # run can never replace a failed one for the same commit.
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'goldens')
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - name: 📚 Checkout
+        uses: actions/checkout@v7
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # Keep in sync with .tool-versions and .fvmrc.
+          flutter-version: 3.50.0
+          cache: true
+
+      - name: Ⓜ️ Set up Melos
+        uses: bluefireteam/melos-action@v3
+
+      - name: 📝 Run Golden Tests
+        working-directory: packages/liquid_glass_renderer
+        run: flutter test --enable-impeller --tags=golden
+
+      - name: 📤 Upload golden failures
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: golden-failures
+          path: packages/liquid_glass_renderer/test/src/failures/
+          retention-days: 7
