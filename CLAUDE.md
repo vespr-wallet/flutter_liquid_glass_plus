@@ -57,8 +57,8 @@ change gets an entry in `packages/liquid_glass_renderer/CHANGELOG.md` (under
 `## Unreleased` until a release moves it into a version section). A release is a
 PR that bumps the version; after it merges, `main` is tagged with an annotated
 `vX.Y.Z` tag and a GitHub Release is created whose notes are that CHANGELOG
-section. Don't use `melos version` or a `chore(release)` commit title:
-`tag-release.yaml` would create melos-style tags.
+section. Tags are created by hand; don't use `melos version`, which creates
+melos-style tags.
 
 ### Running the Example App
 ```bash
@@ -120,8 +120,6 @@ All tests must use the `--enable-impeller` flag for consistent golden test resul
 ## CI/CD Workflows
 
 - **main.yaml**: PR title check, format check, `analyze --fatal-infos`, tests without goldens (Linux), golden tests (macOS, main and `goldens`-labeled PRs)
-- **version.yaml**: Upstream's manual melos versioning workflow (not used by the fork's release process)
-- **tag-release.yaml**: Upstream's melos tagging on `chore(release)` commits (not used by the fork's release process)
 - **benchmark.yaml**: Performance benchmarking
 
 ## Debugging
