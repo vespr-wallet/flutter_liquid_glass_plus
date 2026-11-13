@@ -1,5 +1,6 @@
 ## Unreleased
 
+- **FIX**: `LiquidGlass` shadows are only painted outside the glass shape, like CSS `box-shadow` on a translucent box. They are clipped out where the glass is, whatever their `BlurStyle`, offset or spread, so the glass is never darkened. Before, every blur style except `BlurStyle.outer` (and any offset shadow) also painted inside the shape, over the glass.
 - **REFACTOR**: removed every null assertion (`!`) and forced cast from the package, its tests and the example app, replaced with null checks, patterns and non-nullable fields. A `LiquidGlass` used outside a `LiquidGlassLayer` (or a `LiquidGlassRenderScope` lookup without one) now throws a `FlutterError` that names the missing ancestor instead of a bare `Null check operator used on a null value`. Deleted the unused `TransformTrackingRepaintBoundaryMixin`.
 
 ## 0.4.0
