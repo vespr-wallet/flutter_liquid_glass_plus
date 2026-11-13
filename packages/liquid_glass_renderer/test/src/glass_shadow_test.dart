@@ -42,7 +42,9 @@ void main() {
   group('LiquidGlass clip', () {
     List<Clip> clips(WidgetTester tester) => [
           tester
-              .widget<ClipRSuperellipse>(find.byType(ClipRSuperellipse))
+              .widget<ClipRSuperellipse>(
+                find.byWidgetPredicate((w) => w is ClipRSuperellipse),
+              )
               .clipBehavior,
           tester.widget<ClipRRect>(find.byType(ClipRRect)).clipBehavior,
         ];
@@ -137,6 +139,49 @@ void main() {
       testWidgets('LiquidOval: a corner outside the oval is not tappable',
           (tester) async {
         expect(await tapAt(tester, const LiquidOval(), const Offset(5, 5)), 0);
+      });
+
+      testWidgets('LiquidRoundedSuperellipse: the center is tappable',
+          (tester) async {
+        expect(
+          await tapAt(
+            tester,
+            const LiquidRoundedSuperellipse(borderRadius: 50),
+            const Offset(100, 100),
+          ),
+          1,
+        );
+      });
+
+      testWidgets(
+          'LiquidRoundedSuperellipse: a corner outside the shape is not '
+          'tappable', (tester) async {
+        const shape = LiquidRoundedSuperellipse(borderRadius: 50);
+        const corner = Offset(5, 5);
+        // The corner is inside the bounding rect but outside the shape.
+        expect(
+          RSuperellipse.fromRectAndRadius(
+            Offset.zero & const Size.square(200),
+            const Radius.circular(50),
+          ).contains(corner),
+          isFalse,
+        );
+        expect(await tapAt(tester, shape, corner), 0);
+      });
+
+      testWidgets(
+          'LiquidRoundedSuperellipse: a point inside the shape near the '
+          'corner is tappable', (tester) async {
+        const shape = LiquidRoundedSuperellipse(borderRadius: 50);
+        const nearCorner = Offset(25, 25);
+        expect(
+          RSuperellipse.fromRectAndRadius(
+            Offset.zero & const Size.square(200),
+            const Radius.circular(50),
+          ).contains(nearCorner),
+          isTrue,
+        );
+        expect(await tapAt(tester, shape, nearCorner), 1);
       });
 
       testWidgets('LiquidRoundedRectangle: a cut corner is not tappable',

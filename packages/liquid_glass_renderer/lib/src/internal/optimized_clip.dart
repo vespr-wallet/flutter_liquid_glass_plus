@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:liquid_glass_plus/liquid_glass_plus.dart';
 import 'package:meta/meta.dart';
@@ -12,9 +13,13 @@ import 'package:meta/meta.dart';
 ///
 /// Both clips are always built, nested, so a change of shape type doesn't
 /// remount [child] and reset its state. Only the clip matching [shape] gets a
-/// clipper, which also limits hit testing to the shape, as the [ClipPath]
-/// did. The other one has no clipper and [Clip.none], so it neither clips
-/// nor filters hits.
+/// clipper, which also limits hit testing to the exact shape, as the
+/// [ClipPath] did. The other one has no clipper and [Clip.none], so it
+/// neither clips nor filters hits.
+///
+/// [RenderClipRSuperellipse] only hit tests against the bounding rect of its
+/// superellipse, so the superellipse clip overrides it to test the exact
+/// shape; painting still uses the cheap primitive clip.
 @internal
 class OptimizedClip extends StatelessWidget {
   const OptimizedClip({
@@ -33,7 +38,7 @@ class OptimizedClip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shape = this.shape;
-    return ClipRSuperellipse(
+    return _ClipRSuperellipseWithExactHitTest(
       clipper: switch (shape) {
         LiquidRoundedSuperellipse(:final borderRadius) =>
           _RSuperellipseClipper(borderRadius),
@@ -53,6 +58,44 @@ class OptimizedClip extends StatelessWidget {
         child: child,
       ),
     );
+  }
+}
+
+/// A [ClipRSuperellipse] whose hit testing follows the superellipse itself
+/// instead of its bounding rect.
+class _ClipRSuperellipseWithExactHitTest extends ClipRSuperellipse {
+  const _ClipRSuperellipseWithExactHitTest({
+    super.clipper,
+    super.clipBehavior,
+    super.child,
+  });
+
+  @override
+  RenderClipRSuperellipse createRenderObject(BuildContext context) {
+    return _RenderClipRSuperellipseWithExactHitTest(
+      borderRadius: borderRadius,
+      clipBehavior: clipBehavior,
+      clipper: clipper,
+      textDirection: Directionality.maybeOf(context),
+    );
+  }
+}
+
+class _RenderClipRSuperellipseWithExactHitTest extends RenderClipRSuperellipse {
+  _RenderClipRSuperellipseWithExactHitTest({
+    super.borderRadius,
+    super.clipBehavior,
+    super.clipper,
+    super.textDirection,
+  });
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    final clipper = this.clipper;
+    if (clipper != null && !clipper.getClip(size).contains(position)) {
+      return false;
+    }
+    return super.hitTest(result, position: position);
   }
 }
 
