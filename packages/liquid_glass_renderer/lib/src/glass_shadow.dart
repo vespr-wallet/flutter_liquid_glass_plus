@@ -9,6 +9,10 @@ import 'package:liquid_glass_plus/liquid_glass_plus.dart';
 /// This avoids rasterizing an arbitrary [Path] with a blur [MaskFilter],
 /// which is much slower than the dedicated primitives Impeller and Skia
 /// provide for these shapes.
+///
+/// The shadows are clipped out of the shape itself, like CSS `box-shadow` on
+/// a translucent box: whatever the [BlurStyle] or offset, nothing is painted
+/// where the glass is, so the shadow never darkens the glass.
 @internal
 class GlassShadow extends SingleChildRenderObjectWidget {
   /// Creates a [GlassShadow] that paints [shadows] around [shape].
@@ -75,6 +79,25 @@ class RenderGlassShadow extends RenderProxyBox {
       final rect = offset & size;
       final canvas = context.canvas;
 
+      // Clip the shape out of everything the shadows can reach, so they only
+      // paint outside the glass.
+      var shadowBounds = rect;
+      for (final shadow in _shadows) {
+        shadowBounds = shadowBounds.expandToInclude(
+          rect
+              .shift(shadow.offset)
+              .inflate(shadow.spreadRadius + shadow.blurSigma * 3),
+        );
+      }
+      canvas
+        ..save()
+        ..clipPath(
+          Path()
+            ..fillType = PathFillType.evenOdd
+            ..addRect(shadowBounds.inflate(1))
+            ..addPath(_shape.getOuterPath(rect), Offset.zero),
+        );
+
       for (final shadow in _shadows) {
         final shadowRect =
             rect.shift(shadow.offset).inflate(shadow.spreadRadius);
@@ -101,6 +124,8 @@ class RenderGlassShadow extends RenderProxyBox {
             canvas.drawOval(shadowRect, paint);
         }
       }
+
+      canvas.restore();
     }
 
     super.paint(context, offset);
