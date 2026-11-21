@@ -1,3 +1,7 @@
+## Unreleased
+
+- Tooling: Flutter 3.50.1 (`.fvmrc`, `.tool-versions`, CI). The minimum SDK constraints are unchanged.
+
 ## 0.4.1
 
 - **FIX**: `LiquidGlass` shadows are only painted outside the glass shape, like CSS `box-shadow` on a translucent box. They are clipped out where the glass is, whatever their `BlurStyle`, offset or spread, so the glass is never darkened. Before, every blur style except `BlurStyle.outer` (and any offset shadow) also painted inside the shape, over the glass.
