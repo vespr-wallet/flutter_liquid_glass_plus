@@ -39,7 +39,7 @@ jobs:
         with:
           channel: stable
           # Keep in sync with .tool-versions and .fvmrc.
-          flutter-version: 3.50.0
+          flutter-version: 3.50.1
           cache: true
 
       - name: Ⓜ️ Set up Melos
