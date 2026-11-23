@@ -2,6 +2,7 @@
 
 - Tooling: Flutter 3.50.1 (`.fvmrc`, `.tool-versions`, CI). The minimum SDK constraints are unchanged.
 - Tooling: CI action majors: the benchmark workflow uses `actions/checkout@v7` and `actions/upload-artifact@v7` (were v4), and the PR title check uses Very Good Workflows v2 (was v1). The package is unchanged.
+- Tooling: CI (main, goldens, benchmark) reads the Flutter version from `.tool-versions` instead of a hard-coded `flutter-version`, and fails if `.fvmrc` names a different version. The benchmark workflow had no pin and ran the latest stable. A Flutter bump now edits `.tool-versions` and `.fvmrc` only.
 
 ## 0.4.1
 
